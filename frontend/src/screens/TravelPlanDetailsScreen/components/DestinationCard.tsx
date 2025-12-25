@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Image, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Image, TouchableOpacity, Animated } from "react-native";
 import { Text, Card, Divider } from "react-native-paper";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { Destination } from "../../../types/travel";
@@ -7,6 +7,7 @@ import { formatCurrency } from "../../../utils/currency";
 import { getDestinationImage } from "../../../utils/images";
 import { openURL } from "../../../utils/linking";
 import { styles } from "../styles";
+import { STRINGS } from "../../../constants/strings";
 
 interface DestinationCardProps {
   destination: Destination;
@@ -28,22 +29,73 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
   cityName,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const expandAnimation = useRef(new Animated.Value(0)).current;
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const rotateAnimation = useRef(new Animated.Value(0)).current;
 
   const isValidImage =
     destination.imageUrl &&
     destination.imageUrl !== "null" &&
     destination.imageUrl !== "N/A" &&
     destination.imageUrl.trim() !== "" &&
-    destination.imageUrl.startsWith("http") &&
+    (destination.imageUrl.startsWith("http") || destination.imageUrl.startsWith("https")) &&
     !imageErrors.has(destination.imageUrl) &&
     !imageError;
 
-  // Get image URL - use provided imageUrl, or search for one, or use default
   const imageUrl = isValidImage
     ? destination.imageUrl!
     : getDestinationImage(destination.title, cityName);
 
+  // Animate card expansion
+  useEffect(() => {
+    Animated.spring(expandAnimation, {
+      toValue: isExpanded ? 1 : 0,
+      useNativeDriver: false,
+      tension: 50,
+      friction: 7,
+    }).start();
+  }, [isExpanded, expandAnimation]);
+
+  // Animate chevron rotation
+  useEffect(() => {
+    Animated.spring(rotateAnimation, {
+      toValue: isExpanded ? 1 : 0,
+      useNativeDriver: true,
+      tension: 50,
+      friction: 7,
+    }).start();
+  }, [isExpanded, rotateAnimation]);
+
+  // Fade in animation on mount
+  useEffect(() => {
+    Animated.timing(fadeAnimation, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnimation]);
+
+  const chevronRotation = rotateAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+
+  const contentHeight = expandAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 200], // Adjust based on content height
+  });
+
+  // Debug: Log image URLs
+  if (destination.imageUrl && destination.imageUrl !== "null") {
+    console.log(`Destination "${destination.title}" imageUrl:`, destination.imageUrl);
+  }
+
   return (
+    <Animated.View
+      style={[
+        { opacity: fadeAnimation, transform: [{ scale: fadeAnimation }] },
+      ]}
+    >
     <Card style={[styles.destinationCard, isExpanded && styles.expandedCard]}>
       <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
         <View style={styles.destinationImageContainer}>
@@ -90,32 +142,36 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
                   )}
               </View>
             </View>
-            <Icon
-              name={isExpanded ? "chevron-up" : "chevron-down"}
-              size={24}
-              color="#4A90E2"
-            />
+            <Animated.View style={{ transform: [{ rotate: chevronRotation }] }}>
+              <Icon name="chevron-down" size={24} color="#4A90E2" />
+            </Animated.View>
           </View>
 
-          {isExpanded && (
-            <>
-              <Divider style={styles.divider} />
-              <Text style={styles.destinationDescription}>
-                {destination.description}
-              </Text>
-              {destination.ticketLink && (
-                <TouchableOpacity
-                  style={styles.ticketButton}
-                  onPress={() => openURL(destination.ticketLink)}
-                >
-                  <Icon name="ticket" size={20} color="#FFFFFF" />
-                  <Text style={styles.ticketButtonText}>Buy Tickets</Text>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
+          <Animated.View
+            style={{
+              maxHeight: contentHeight,
+              overflow: "hidden",
+              opacity: expandAnimation,
+            }}
+          >
+            <Divider style={styles.divider} />
+            <Text style={styles.destinationDescription}>
+              {destination.description}
+            </Text>
+            {destination.ticketLink && (
+              <TouchableOpacity
+                style={styles.ticketButton}
+                onPress={() => openURL(destination.ticketLink)}
+                activeOpacity={0.8}
+              >
+                <Icon name="ticket" size={20} color="#FFFFFF" />
+                <Text style={styles.ticketButtonText}>{STRINGS.buyTickets}</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
         </Card.Content>
       </TouchableOpacity>
     </Card>
+    </Animated.View>
   );
 };

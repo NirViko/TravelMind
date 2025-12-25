@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Image, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Image, TouchableOpacity, Animated } from "react-native";
 import { Text, Card } from "react-native-paper";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { Restaurant } from "../../../types/travel";
@@ -9,6 +9,7 @@ import {
 } from "../../../utils/images";
 import { openURL } from "../../../utils/linking";
 import { styles } from "../styles";
+import { STRINGS } from "../../../constants/strings";
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -28,17 +29,41 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
     restaurant.imageUrl !== "null" &&
     restaurant.imageUrl !== "N/A" &&
     restaurant.imageUrl.trim() !== "" &&
-    restaurant.imageUrl.startsWith("http") &&
+    (restaurant.imageUrl.startsWith("http") || restaurant.imageUrl.startsWith("https")) &&
     !imageErrors.has(restaurant.imageUrl) &&
     !imageError;
 
-  // Get restaurant image - use provided imageUrl, or search for one, or use default
   const imageUrl = isValidImage
     ? restaurant.imageUrl!
     : getRestaurantImage(restaurant.name, restaurant.cuisine);
 
+  // Fade in and slide up animation on mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnimation, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnimation, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }),
+    ]).start();
+  }, [fadeAnimation, slideAnimation]);
+
   return (
-    <Card style={styles.restaurantCard}>
+    <Animated.View
+      style={[
+        {
+          opacity: fadeAnimation,
+          transform: [{ translateY: slideAnimation }],
+        },
+      ]}
+    >
+      <Card style={styles.restaurantCard}>
       <View style={styles.restaurantImageContainer}>
         <Image
           source={{ uri: imageError ? getDefaultRestaurantImage() : imageUrl }}
@@ -87,10 +112,11 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
             onPress={() => openURL(restaurant.website)}
           >
             <Icon name="web" size={18} color="#4A90E2" />
-            <Text style={styles.websiteButtonText}>Visit Website</Text>
+            <Text style={styles.websiteButtonText}>{STRINGS.visitWebsite}</Text>
           </TouchableOpacity>
         )}
       </Card.Content>
     </Card>
+    </Animated.View>
   );
 };

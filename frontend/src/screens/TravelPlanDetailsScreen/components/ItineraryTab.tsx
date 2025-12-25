@@ -1,5 +1,5 @@
-import React from "react";
-import { ScrollView } from "react-native";
+import React, { useRef, useEffect } from "react";
+import { ScrollView, Animated } from "react-native";
 import { Destination } from "../../../types/travel";
 import { DestinationCard } from "./DestinationCard";
 import { styles } from "../styles";

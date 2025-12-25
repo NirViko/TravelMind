@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Linking,
@@ -10,6 +9,8 @@ import {
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useUserLocation } from "../../../hooks/useUserLocation";
 import { useRoute } from "../../../hooks/useRoute";
+import { transportStyles } from "./styles/TransportTab.styles";
+import { STRINGS } from "../../../constants/strings";
 
 interface TransportTabProps {
   destination: string;
@@ -43,16 +44,20 @@ export const TransportTab: React.FC<TransportTabProps> = ({
     destinationCoordinates || null
   );
 
-  // Determine if flight is needed (distance > 500km or duration > 8 hours)
-  const needsFlight = distance
-    ? distance > 500000 || (duration && duration > 28800)
-    : false;
+  // Calculate distance in kilometers
+  const distanceKm = distance ? distance / 1000 : null;
+  
+  // Determine transport options based on distance
+  // Long distance (>1000km): Only flight
+  // Short distance (<500km): Only public transport (no flight)
+  // Medium distance (500-1000km): Show all options
+  const isLongDistance = distanceKm ? distanceKm > 1000 : false;
+  const isShortDistance = distanceKm ? distanceKm < 500 : false;
+  const needsFlight = distanceKm ? distanceKm > 500 : false;
 
-  // Determine fastest transport method based on distance and duration
-  // Note: This is based on driving route, but we estimate other methods
   const getFastestTransportMethod = (): { method: string; icon: string } => {
     if (!distance || !duration)
-      return { method: "Calculating...", icon: "clock-outline" };
+      return { method: STRINGS.calculating, icon: "clock-outline" };
 
     const distanceKm = distance / 1000;
     const durationHours = duration / 3600;
@@ -90,13 +95,13 @@ export const TransportTab: React.FC<TransportTabProps> = ({
   const fastestMethod = getFastestTransportMethod();
 
   const formatDistance = (meters: number | null): string => {
-    if (!meters) return "Calculating...";
+    if (!meters) return STRINGS.calculating;
     if (meters < 1000) return `${Math.round(meters)}m`;
     return `${(meters / 1000).toFixed(1)}km`;
   };
 
   const formatDuration = (seconds: number | null): string => {
-    if (!seconds) return "Calculating...";
+    if (!seconds) return STRINGS.calculating;
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {
@@ -116,81 +121,158 @@ export const TransportTab: React.FC<TransportTabProps> = ({
     Linking.openURL(url);
   };
 
-  const transportOptions = [
-    {
-      id: "transit",
-      title: "Public Transit",
-      icon: "train",
-      description: "Bus, train, and subway routes",
-      color: "#FF6B6B",
-      action: () => getTransitDirections("transit"),
-    },
-    {
-      id: "bus",
-      title: "Bus",
-      icon: "bus",
-      description: "Bus routes and schedules",
-      color: "#4ECDC4",
-      action: () => getTransitDirections("transit"), // Google Maps uses transit for bus
-    },
-    {
-      id: "train",
-      title: "Train",
-      icon: "train",
-      description: "Train routes and schedules",
-      color: "#9B59B6",
-      action: () => getTransitDirections("transit"), // Google Maps uses transit for train
-    },
-    // Only show flight option if distance requires it (over 500km or 8+ hours)
-    ...(needsFlight
-      ? [
-          {
-            id: "flight",
-            title: "Flight",
-            icon: "airplane",
-            description: "Book flights to your destination",
-            color: "#4A90E2",
-            action: () => {
-              const searchQuery = encodeURIComponent(
-                `flights to ${destination}`
-              );
-              Linking.openURL(
-                `https://www.google.com/travel/flights?q=${searchQuery}`
-              );
-            },
-          },
-        ]
-      : []),
-    {
-      id: "directions",
-      title: "Driving Directions",
-      icon: "car",
-      description: "Get driving directions",
-      color: "#FFA500",
+  // Build transport options based on distance
+  const transportOptions = [];
+  
+  // For long distances (>1000km): Only show flight (no car, no public transport)
+  if (isLongDistance) {
+    transportOptions.push({
+      id: "flight",
+      title: STRINGS.flight,
+      icon: "airplane",
+      description: STRINGS.flightDescription,
+      color: "#4A90E2",
       action: () => {
-        if (userLocation && destinationCoordinates) {
-          const { latitude: originLat, longitude: originLng } = userLocation;
-          const { latitude: destLat, longitude: destLng } =
-            destinationCoordinates;
-          Linking.openURL(
-            `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`
-          );
-        } else if (destinationCoordinates) {
-          const { latitude, longitude } = destinationCoordinates;
-          Linking.openURL(
-            `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
-          );
-        } else {
-          const searchQuery = encodeURIComponent(
-            `directions to ${destination}`
-          );
-          Linking.openURL(
-            `https://www.google.com/maps/search/?api=1&query=${searchQuery}`
-          );
-        }
+        const searchQuery = encodeURIComponent(
+          `flights to ${destination}`
+        );
+        Linking.openURL(
+          `https://www.google.com/travel/flights?q=${searchQuery}`
+        );
       },
-    },
-  ];
+    });
+  } 
+  // For short distances (<500km): Only show public transport and driving (no flight)
+  else if (isShortDistance) {
+    transportOptions.push(
+      {
+        id: "transit",
+        title: STRINGS.publicTransit,
+        icon: "train",
+        description: STRINGS.publicTransitDescription,
+        color: "#FF6B6B",
+        action: () => getTransitDirections("transit"),
+      },
+      {
+        id: "bus",
+        title: STRINGS.bus,
+        icon: "bus",
+        description: STRINGS.busDescription,
+        color: "#4ECDC4",
+        action: () => getTransitDirections("transit"),
+      },
+      {
+        id: "train",
+        title: STRINGS.train,
+        icon: "train",
+        description: STRINGS.trainDescription,
+        color: "#9B59B6",
+        action: () => getTransitDirections("transit"),
+      },
+      {
+        id: "directions",
+        title: STRINGS.drivingDirections,
+        icon: "car",
+        description: STRINGS.drivingDirectionsDescription,
+        color: "#FFA500",
+        action: () => {
+          if (userLocation && destinationCoordinates) {
+            const { latitude: originLat, longitude: originLng } = userLocation;
+            const { latitude: destLat, longitude: destLng } =
+              destinationCoordinates;
+            Linking.openURL(
+              `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`
+            );
+          } else if (destinationCoordinates) {
+            const { latitude, longitude } = destinationCoordinates;
+            Linking.openURL(
+              `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
+            );
+          } else {
+            const searchQuery = encodeURIComponent(
+              `directions to ${destination}`
+            );
+            Linking.openURL(
+              `https://www.google.com/maps/search/?api=1&query=${searchQuery}`
+            );
+          }
+        },
+      }
+    );
+  }
+  // For medium distances (500-1000km): Show all options including driving
+  else {
+    transportOptions.push(
+      {
+        id: "transit",
+        title: STRINGS.publicTransit,
+        icon: "train",
+        description: STRINGS.publicTransitDescription,
+        color: "#FF6B6B",
+        action: () => getTransitDirections("transit"),
+      },
+      {
+        id: "bus",
+        title: STRINGS.bus,
+        icon: "bus",
+        description: STRINGS.busDescription,
+        color: "#4ECDC4",
+        action: () => getTransitDirections("transit"),
+      },
+      {
+        id: "train",
+        title: STRINGS.train,
+        icon: "train",
+        description: STRINGS.trainDescription,
+        color: "#9B59B6",
+        action: () => getTransitDirections("transit"),
+      },
+      {
+        id: "flight",
+        title: STRINGS.flight,
+        icon: "airplane",
+        description: STRINGS.flightDescription,
+        color: "#4A90E2",
+        action: () => {
+          const searchQuery = encodeURIComponent(
+            `flights to ${destination}`
+          );
+          Linking.openURL(
+            `https://www.google.com/travel/flights?q=${searchQuery}`
+          );
+        },
+      },
+      {
+        id: "directions",
+        title: STRINGS.drivingDirections,
+        icon: "car",
+        description: STRINGS.drivingDirectionsDescription,
+        color: "#FFA500",
+        action: () => {
+          if (userLocation && destinationCoordinates) {
+            const { latitude: originLat, longitude: originLng } = userLocation;
+            const { latitude: destLat, longitude: destLng } =
+              destinationCoordinates;
+            Linking.openURL(
+              `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`
+            );
+          } else if (destinationCoordinates) {
+            const { latitude, longitude } = destinationCoordinates;
+            Linking.openURL(
+              `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
+            );
+          } else {
+            const searchQuery = encodeURIComponent(
+              `directions to ${destination}`
+            );
+            Linking.openURL(
+              `https://www.google.com/maps/search/?api=1&query=${searchQuery}`
+            );
+          }
+        },
+      }
+    );
+  }
 
   return (
     <ScrollView
@@ -201,12 +283,12 @@ export const TransportTab: React.FC<TransportTabProps> = ({
         <View style={transportStyles.routeCard}>
           <View style={transportStyles.routeHeader}>
             <Icon name="map-marker-path" size={24} color="#4A90E2" />
-            <Text style={transportStyles.routeTitle}>Direct Route</Text>
+            <Text style={transportStyles.routeTitle}>{STRINGS.directRoute}</Text>
           </View>
           {routeLoading ? (
             <View style={transportStyles.loadingContainer}>
               <Text style={transportStyles.routeInfo}>
-                Calculating route...
+                {STRINGS.calculatingRoute}
               </Text>
             </View>
           ) : route.length > 0 && !isFallback ? (
@@ -218,37 +300,52 @@ export const TransportTab: React.FC<TransportTabProps> = ({
                     {formatDistance(distance)}
                   </Text>
                 </View>
-                <View style={transportStyles.routeDetailItem}>
-                  <Icon name="clock-outline" size={20} color="#4A90E2" />
-                  <Text style={transportStyles.routeDetailText}>
-                    {formatDuration(duration)}
+                {/* Only show duration for short/medium distances - not for long distances (flights) */}
+                {!isLongDistance && (
+                  <View style={transportStyles.routeDetailItem}>
+                    <Icon name="clock-outline" size={20} color="#4A90E2" />
+                    <Text style={transportStyles.routeDetailText}>
+                      {formatDuration(duration)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {/* Only show driving route info for short/medium distances */}
+              {!isLongDistance && (
+                <>
+                  <View style={transportStyles.fastestMethodContainer}>
+                    <Icon name="car" size={16} color="#4A90E2" />
+                    <Text style={transportStyles.fastestMethodText}>
+                      {STRINGS.drivingRouteCalculated}
+                    </Text>
+                  </View>
+                  <View style={transportStyles.transitHint}>
+                    <Icon name="information-outline" size={14} color="#666666" />
+                    <Text style={transportStyles.transitHintText}>
+                      {STRINGS.checkTransitOptions}
+                    </Text>
+                  </View>
+                </>
+              )}
+              {/* For long distances, show flight recommendation */}
+              {isLongDistance && (
+                <View style={transportStyles.transitHint}>
+                  <Icon name="airplane" size={14} color="#4A90E2" />
+                  <Text style={transportStyles.transitHintText}>
+                    For long distances, flight is the recommended option
                   </Text>
                 </View>
-              </View>
-              <View style={transportStyles.fastestMethodContainer}>
-                <Icon name="car" size={16} color="#4A90E2" />
-                <Text style={transportStyles.fastestMethodText}>
-                  Driving route calculated
-                </Text>
-              </View>
-              <View style={transportStyles.transitHint}>
-                <Icon name="information-outline" size={14} color="#666666" />
-                <Text style={transportStyles.transitHintText}>
-                  Check transit options below for bus/train routes (may be
-                  faster in cities)
-                </Text>
-              </View>
+              )}
             </View>
           ) : isFallback ? (
             <Text style={transportStyles.routeInfo}>
-              Calculating route... Use options below for directions
+              {STRINGS.calculatingRoute} {STRINGS.useOptionsBelow}
             </Text>
           ) : null}
           <View style={transportStyles.transitHint}>
             <Icon name="information-outline" size={16} color="#666666" />
             <Text style={transportStyles.transitHintText}>
-              Tap the options below to see public transit routes (bus, train) on
-              Google Maps
+              {STRINGS.tapOptionsBelow}
             </Text>
           </View>
         </View>
@@ -288,169 +385,12 @@ export const TransportTab: React.FC<TransportTabProps> = ({
       <View style={transportStyles.infoSection}>
         <View style={transportStyles.infoHeader}>
           <Icon name="information" size={20} color="#4A90E2" />
-          <Text style={transportStyles.infoTitle}>Travel Tips</Text>
+          <Text style={transportStyles.infoTitle}>{STRINGS.travelTips}</Text>
         </View>
         <Text style={transportStyles.infoText}>
-          • Book flights in advance for better prices{"\n"}• Check train
-          schedules for the best routes{"\n"}• Bus tickets can be purchased at
-          stations or online{"\n"}• Use directions for real-time navigation
+          {STRINGS.travelTip1}{"\n"}{STRINGS.travelTip2}{"\n"}{STRINGS.travelTip3}{"\n"}{STRINGS.travelTip4}
         </Text>
       </View>
     </ScrollView>
   );
 };
-
-const transportStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  optionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  selectedCard: {
-    borderColor: "#4A90E2",
-    shadowColor: "#4A90E2",
-    shadowOpacity: 0.2,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  content: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000000",
-    marginBottom: 4,
-  },
-  optionDescription: {
-    fontSize: 14,
-    color: "#666666",
-  },
-  infoSection: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 32,
-  },
-  infoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#4A90E2",
-    marginLeft: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: "#666666",
-    lineHeight: 22,
-  },
-  routeCard: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  routeHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  routeTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  routeInfo: {
-    fontSize: 14,
-    color: "#666666",
-    fontStyle: "italic",
-  },
-  routeError: {
-    fontSize: 14,
-    color: "#FF6B6B",
-  },
-  routeDetails: {
-    flexDirection: "row",
-    gap: 24,
-    marginTop: 8,
-  },
-  fastestMethodContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-    gap: 6,
-  },
-  fastestMethodText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#4A90E2",
-  },
-  routeDetailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  routeDetailText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#4A90E2",
-  },
-  loadingContainer: {
-    paddingVertical: 8,
-  },
-  errorContainer: {
-    paddingVertical: 8,
-  },
-  routeErrorHint: {
-    fontSize: 12,
-    color: "#999999",
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  transitHint: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    gap: 8,
-  },
-  transitHintText: {
-    fontSize: 12,
-    color: "#666666",
-    flex: 1,
-    lineHeight: 18,
-  },
-});

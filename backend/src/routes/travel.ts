@@ -1,5 +1,8 @@
 import { Router, Request, Response } from "express";
 import { HuggingFaceService } from "../services/huggingface";
+import { GroqService } from "../services/groq";
+import { GooglePlacesService } from "../services/googlePlaces";
+import { UnsplashService } from "../services/unsplash";
 import { TravelPlanRequest, TravelPlanResponse } from "../types/travel";
 
 const router = Router();
@@ -50,6 +53,7 @@ CRITICAL REQUIREMENTS - READ CAREFULLY:
 - Research actual tourist attractions, museums, landmarks, parks, and points of interest in ${destination}
 - Use the EXACT official names of places as they appear in travel guides, official websites, or Google Maps
 - If you are not certain a place exists, do not include it
+- IMPORTANT: When in doubt, exclude rather than include. It is better to return fewer results than incorrect ones.
 
 IMPORTANT: Return ONLY valid JSON, no additional text before or after.
 
@@ -61,15 +65,19 @@ Requirements:
    - Coordinates (REAL and ACCURATE latitude and longitude as numbers - you MUST use the actual coordinates of the REAL place. Look up the exact coordinates from Google Maps or official sources. Do NOT approximate or invent coordinates. Latitude must be between -90 and 90, longitude between -180 and 180)
    - Visit order (sequential number starting from 1)
    - Estimated duration (e.g., "2 hours", "Half day", "Full day")
-   - Image URL (use a real image URL from Unsplash or similar: "https://images.unsplash.com/photo-..." or null if not available)
+   - Image URL (will be automatically fetched from Google Places API - set to null in your response)
    - Price (entry/admission price in local currency if applicable, null if free - use realistic prices for the actual place)
    - Ticket link (URL to buy tickets if applicable, null if not needed)
 3. Include 2-3 hotel recommendations (as an array) with:
-   - Hotel name (REAL hotel name that EXISTS in ${destination}. Use actual hotel names from booking sites. Do NOT invent hotel names)
-   - Description (2-3 sentences about the hotel - describe what actually exists)
-   - Coordinates (REAL and ACCURATE latitude and longitude of the actual hotel location)
-   - Booking links (CRITICAL: Use REAL, FUNCTIONAL booking URLs from sites like "https://www.booking.com/hotel/...", "https://www.expedia.com/...", "https://www.agoda.com/...", "https://www.hotels.com/..." for the specific hotel. These links MUST lead directly to the booking page where users can actually purchase a stay. If a real link is not available, use "N/A". Do NOT generate fake or generic booking links)
-   - Estimated price per night in local currency (realistic for the destination and budget)
+   - Hotel name (CRITICAL: Use ONLY hotel names that you can VERIFY actually exist in ${destination}. You MUST check that the hotel exists on booking.com, expedia.com, or similar booking sites before including it. 
+     * WRONG EXAMPLES (DO NOT DO THIS): "Dan Panorama Ashdod" (doesn't exist), "Hilton Tel Aviv" when searching for "Ashdod", "Marriott [City]" without verification
+     * CORRECT APPROACH: Only include hotels you can verify exist. Search booking sites first. If unsure, exclude the hotel entirely.
+     * Do NOT combine hotel chain names with city names. Do NOT assume a chain hotel exists in a city just because the chain exists elsewhere.
+     * If you cannot verify a hotel exists through actual booking sites, do NOT include it. Return fewer hotels rather than fictional ones)
+   - Description (2-3 sentences about the hotel - describe what actually exists at this verified hotel)
+   - Coordinates (REAL and ACCURATE latitude and longitude of the actual hotel location - only if you verified the hotel exists)
+   - Booking links (CRITICAL: Use REAL, FUNCTIONAL booking URLs from sites like "https://www.booking.com/hotel/...", "https://www.expedia.com/...", "https://www.agoda.com/...", "https://www.hotels.com/..." for the specific hotel. These links MUST lead directly to the booking page where users can actually purchase a stay. If you cannot find a real, functional link for a verified hotel, use "N/A". Do NOT generate fake or generic booking links. If you cannot verify the hotel exists, do NOT include it at all)
+   - Estimated price per night in local currency (realistic for the destination and budget - only for verified hotels)
 4. Determine the local currency based on the destination (e.g., EUR for Europe, GBP for UK, JPY for Japan, USD for US, etc.)
 5. Calculate estimated total cost for the trip in local currency (should be close to but under the budget)
 6. Include 5-8 restaurant recommendations in the area with:
@@ -139,13 +147,22 @@ Return the response as a valid JSON object with this EXACT structure (no markdow
   "recommendations": ["<tip 1>", "<tip 2>", ...]
 }
 
-CRITICAL VALIDATION RULES:
+CRITICAL VALIDATION RULES - FOLLOW THESE EXACTLY:
 1. ALL PLACES MUST BE REAL AND EXISTING:
    - Destinations: Use ONLY actual tourist attractions, museums, landmarks, parks that REALLY EXIST in ${destination}
-   - Hotels: Use ONLY real hotel names that ACTUALLY EXIST in ${destination}
-   - Restaurants: Use ONLY real restaurant names that ACTUALLY EXIST in ${destination}
+   - Hotels: EXTREMELY CRITICAL - Use ONLY hotel names that you can VERIFY exist in ${destination}. Before including any hotel:
+     * You MUST check if it exists on booking.com, expedia.com, agoda.com, or hotels.com
+     * WRONG: "Dan Panorama Ashdod" (doesn't exist - you're guessing based on chain name)
+     * WRONG: "Hilton [City]" without verification
+     * WRONG: Combining any chain name with city name without checking
+     * CORRECT: Only include hotels you found on actual booking sites
+     * If you cannot verify a hotel exists through actual booking sites, DO NOT include it
+     * It is better to return 0 hotels than to include 1 fictional hotel
+     * When in doubt, EXCLUDE the hotel
+   - Restaurants: Use ONLY real restaurant names that ACTUALLY EXIST in ${destination}. Verify on Google Maps or TripAdvisor before including.
    - Do NOT create fictional places, generic names, or approximate locations
    - If you are unsure if a place exists, do not include it
+   - REMEMBER: Accuracy is more important than quantity. Fewer accurate results is better than many incorrect results.
 
 2. ALL COORDINATES MUST BE REAL AND ACCURATE:
    - Use actual coordinates from Google Maps, official websites, or verified sources
@@ -174,7 +191,7 @@ Return ONLY valid JSON, no additional text.`;
       {
         role: "system" as const,
         content:
-          "You are a travel planning expert with access to real-world travel data. You MUST use ONLY real, existing places that actually exist in the specified destination. Never invent, make up, or create fictional places. Always verify place names and coordinates before including them. Use exact official names and accurate coordinates from verified sources like Google Maps. If you are unsure if a place exists, do not include it.",
+          "You are a FACTUAL travel planning expert. Your ONLY job is to provide 100% ACCURATE, VERIFIED information. You MUST NEVER invent, guess, or create fictional places, hotels, or restaurants. CRITICAL RULES: 1) For hotels: You MUST verify each hotel exists on booking.com, expedia.com, agoda.com, or hotels.com BEFORE including it. Do NOT combine chain names with cities (e.g., 'Dan Panorama Ashdod' is WRONG if it doesn't exist - verify first!). If you cannot verify a hotel exists, DO NOT include it. 2) For places: Use ONLY real tourist attractions that you can verify exist. Use exact names from Google Maps or official sources. 3) For coordinates: Use ONLY real coordinates from Google Maps - never invent them. 4) When in doubt: EXCLUDE. It is better to return fewer results than incorrect ones. Your accuracy is critical - users rely on this information to make real travel decisions.",
       },
       {
         role: "user" as const,
@@ -182,16 +199,47 @@ Return ONLY valid JSON, no additional text.`;
       },
     ];
 
-    // Try with a different model that's more reliable
-    // Using meta-llama which is better supported
-    const aiResponse = await HuggingFaceService.chatCompletion(
-      messages,
-      "meta-llama/Meta-Llama-3-8B-Instruct",
-      {
-        max_tokens: 4000, // Increased to handle larger responses with restaurants
-        temperature: 0.7,
+    // Using AI for travel plan generation
+    // Try Groq first (free, fast, accurate), fallback to Hugging Face if not available
+    let aiResponse;
+
+    // Check if Groq API key is configured
+    if (process.env.GROQ_API_KEY) {
+      try {
+        // Groq offers free tier with very accurate models
+        // llama-3.1-70b-versatile is much more accurate than Llama 3 8B
+        aiResponse = await GroqService.chatCompletion(
+          messages,
+          "llama-3.1-70b-versatile", // 70B model - much more accurate than 8B
+          {
+            maxTokens: 4000,
+            temperature: 0.1, // Very low temperature for maximum accuracy and minimal creativity
+          }
+        );
+      } catch (groqError: any) {
+        console.warn(
+          "Groq API not available, falling back to Hugging Face:",
+          groqError.message
+        );
       }
-    );
+    }
+
+    // Use Hugging Face if Groq failed or is not configured
+    if (!aiResponse) {
+      aiResponse = await HuggingFaceService.chatCompletion(
+        messages,
+        "meta-llama/Meta-Llama-3-8B-Instruct",
+        {
+          max_tokens: 4000,
+          temperature: 0.1, // Very low temperature for maximum accuracy
+        }
+      );
+    }
+
+    // Ensure we have a response
+    if (!aiResponse) {
+      throw new Error("Failed to get response from AI service");
+    }
 
     // Parse AI response (should be JSON)
     let travelPlan;
@@ -310,6 +358,114 @@ Return ONLY valid JSON, no additional text.`;
         throw new Error("Itinerary must be an array");
       }
 
+      // Enhance with real photos from Google Places API
+      if (process.env.GOOGLE_PLACES_API_KEY) {
+        try {
+          console.log("📸 Fetching real photos from Google Places API...");
+          console.log(
+            `API Key configured: ${
+              process.env.GOOGLE_PLACES_API_KEY ? "Yes" : "No"
+            }`
+          );
+
+          // Get photos for destinations
+          if (travelPlan.itinerary && Array.isArray(travelPlan.itinerary)) {
+            console.log(
+              `Fetching photos for ${travelPlan.itinerary.length} destinations...`
+            );
+            const destinationPhotos =
+              await GooglePlacesService.getRealPlacePhotos(
+                travelPlan.itinerary.map((dest: any) => ({
+                  name: dest.title,
+                  coordinates: dest.coordinates,
+                }))
+              );
+
+            let photosFound = 0;
+            travelPlan.itinerary = travelPlan.itinerary.map((dest: any) => {
+              const photoUrl = destinationPhotos.get(dest.title);
+              if (photoUrl) {
+                dest.imageUrl = photoUrl;
+                photosFound++;
+              }
+              return dest;
+            });
+            console.log(
+              `✅ Found ${photosFound}/${travelPlan.itinerary.length} destination photos`
+            );
+          }
+
+          // Get photos for hotels
+          if (travelPlan.hotels && Array.isArray(travelPlan.hotels)) {
+            console.log(
+              `Fetching photos for ${travelPlan.hotels.length} hotels...`
+            );
+            const hotelPhotos = await GooglePlacesService.getRealPlacePhotos(
+              travelPlan.hotels.map((hotel: any) => ({
+                name: hotel.name,
+                coordinates: hotel.coordinates,
+              }))
+            );
+
+            let photosFound = 0;
+            travelPlan.hotels = travelPlan.hotels.map((hotel: any) => {
+              const photoUrl = hotelPhotos.get(hotel.name);
+              if (photoUrl) {
+                hotel.imageUrl = photoUrl;
+                photosFound++;
+              }
+              return hotel;
+            });
+            console.log(
+              `✅ Found ${photosFound}/${travelPlan.hotels.length} hotel photos`
+            );
+          }
+
+          // Get photos for restaurants
+          if (travelPlan.restaurants && Array.isArray(travelPlan.restaurants)) {
+            console.log(
+              `Fetching photos for ${travelPlan.restaurants.length} restaurants...`
+            );
+            const restaurantPhotos =
+              await GooglePlacesService.getRealPlacePhotos(
+                travelPlan.restaurants.map((rest: any) => ({
+                  name: rest.name,
+                  coordinates: rest.coordinates,
+                }))
+              );
+
+            let photosFound = 0;
+            travelPlan.restaurants = travelPlan.restaurants.map((rest: any) => {
+              const photoUrl = restaurantPhotos.get(rest.name);
+              if (photoUrl) {
+                rest.imageUrl = photoUrl;
+                photosFound++;
+              }
+              return rest;
+            });
+            console.log(
+              `✅ Found ${photosFound}/${travelPlan.restaurants.length} restaurant photos`
+            );
+          }
+
+          console.log(
+            "✅ Successfully processed photos from Google Places API"
+          );
+        } catch (photoError: any) {
+          console.warn(
+            "⚠️  Error fetching photos from Google Places API, trying Unsplash:",
+            photoError.message
+          );
+          // Fallback to Unsplash
+          await addUnsplashPhotos(travelPlan, destination);
+        }
+      } else {
+        console.log(
+          "📸 Google Places API not configured, using Unsplash for photos..."
+        );
+        await addUnsplashPhotos(travelPlan, destination);
+      }
+
       // Handle both old format (hotel) and new format (hotels)
       if (travelPlan.hotel && !travelPlan.hotels) {
         travelPlan.hotels = [travelPlan.hotel];
@@ -379,9 +535,60 @@ Return ONLY valid JSON, no additional text.`;
         });
       }
 
-      // Validate coordinates for hotels
+      // Validate coordinates for hotels and check for suspicious patterns
       if (travelPlan.hotels && Array.isArray(travelPlan.hotels)) {
         travelPlan.hotels = travelPlan.hotels.filter((hotel: any) => {
+          const hotelName = (hotel.name || "").toLowerCase();
+          const destinationLower = destination.toLowerCase();
+
+          // Check if all booking links are "N/A" - this is suspicious
+          const allLinksNA =
+            !hotel.bookingLinks ||
+            ((hotel.bookingLinks.booking === "N/A" ||
+              !hotel.bookingLinks.booking) &&
+              (hotel.bookingLinks.expedia === "N/A" ||
+                !hotel.bookingLinks.expedia) &&
+              (hotel.bookingLinks.agoda === "N/A" ||
+                !hotel.bookingLinks.agoda) &&
+              (hotel.bookingLinks.hotels === "N/A" ||
+                !hotel.bookingLinks.hotels));
+
+          // If all booking links are N/A, filter out the hotel (likely fictional)
+          if (allLinksNA) {
+            console.warn(
+              `Filtering out hotel "${hotel.name}" - no booking links available (likely unverified/fictional)`
+            );
+            return false;
+          }
+
+          // Check for suspicious patterns: chain name + city name combinations
+          const commonChains = [
+            "dan panorama",
+            "dan hotel",
+            "hilton",
+            "marriott",
+            "sheraton",
+            "hyatt",
+            "radisson",
+            "intercontinental",
+            "holiday inn",
+            "ramada",
+          ];
+
+          const hasChainName = commonChains.some((chain) =>
+            hotelName.includes(chain)
+          );
+          const hasCityName = hotelName.includes(destinationLower);
+
+          // If hotel has both chain name and city name but no booking links, it's suspicious
+          if (hasChainName && hasCityName && allLinksNA) {
+            console.warn(
+              `Filtering out suspicious hotel "${hotel.name}" - appears to be fictional (chain + city name but no booking links)`
+            );
+            return false;
+          }
+
+          // Validate coordinates if present
           if (hotel.coordinates) {
             if (
               typeof hotel.coordinates.latitude !== "number" ||
@@ -427,5 +634,75 @@ Return ONLY valid JSON, no additional text.`;
     });
   }
 });
+
+/**
+ * Add photos from Unsplash API (fallback when Google Places doesn't work)
+ */
+async function addUnsplashPhotos(travelPlan: any, destination: string) {
+  try {
+    console.log("📸 Fetching photos from Unsplash...");
+
+    // Get photos for destinations
+    if (travelPlan.itinerary && Array.isArray(travelPlan.itinerary)) {
+      const destinationPhotos = await UnsplashService.getPhotosForPlaces(
+        travelPlan.itinerary.map((dest: any) => ({
+          name: dest.title,
+          location: destination,
+          type: "destination" as const,
+        }))
+      );
+
+      travelPlan.itinerary = travelPlan.itinerary.map((dest: any) => {
+        const photoUrl = destinationPhotos.get(dest.title);
+        if (photoUrl && !dest.imageUrl) {
+          dest.imageUrl = photoUrl;
+        }
+        return dest;
+      });
+    }
+
+    // Get photos for hotels
+    if (travelPlan.hotels && Array.isArray(travelPlan.hotels)) {
+      const hotelPhotos = await UnsplashService.getPhotosForPlaces(
+        travelPlan.hotels.map((hotel: any) => ({
+          name: hotel.name,
+          location: destination,
+          type: "hotel" as const,
+        }))
+      );
+
+      travelPlan.hotels = travelPlan.hotels.map((hotel: any) => {
+        const photoUrl = hotelPhotos.get(hotel.name);
+        if (photoUrl && !hotel.imageUrl) {
+          hotel.imageUrl = photoUrl;
+        }
+        return hotel;
+      });
+    }
+
+    // Get photos for restaurants
+    if (travelPlan.restaurants && Array.isArray(travelPlan.restaurants)) {
+      const restaurantPhotos = await UnsplashService.getPhotosForPlaces(
+        travelPlan.restaurants.map((rest: any) => ({
+          name: rest.name,
+          location: destination,
+          type: "restaurant" as const,
+        }))
+      );
+
+      travelPlan.restaurants = travelPlan.restaurants.map((rest: any) => {
+        const photoUrl = restaurantPhotos.get(rest.name);
+        if (photoUrl && !rest.imageUrl) {
+          rest.imageUrl = photoUrl;
+        }
+        return rest;
+      });
+    }
+
+    console.log("✅ Successfully added Unsplash photos");
+  } catch (error: any) {
+    console.warn("⚠️  Error adding Unsplash photos:", error.message);
+  }
+}
 
 export default router;

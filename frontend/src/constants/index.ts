@@ -39,3 +39,5 @@ export const COLORS = {
   surface: "#ffffff",
   text: "#000000",
 };
+
+export * from "./strings";

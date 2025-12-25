@@ -22,6 +22,7 @@ export interface Hotel {
     hotels?: string;
   };
   estimatedPrice?: number;
+  imageUrl?: string;
 }
 
 export interface Destination {
