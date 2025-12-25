@@ -1,7 +1,13 @@
 import React, { useState } from "react";
-import { View, TextInput, ImageBackground, Text, TouchableOpacity } from "react-native";
+import {
+  View,
+  TextInput,
+  ImageBackground,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { Button } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { styles } from "./styles";
 
 interface LoginScreenProps {
@@ -9,7 +15,10 @@ interface LoginScreenProps {
   onBack: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({
+  onLogin,
+  onBack,
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -82,4 +91,3 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onBack }) => 
     </View>
   );
 };
-

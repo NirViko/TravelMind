@@ -7,7 +7,7 @@ import {
   ScrollView,
   Linking,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useUserLocation } from "../../../hooks/useUserLocation";
 import { useRoute } from "../../../hooks/useRoute";
 
@@ -35,12 +35,59 @@ export const TransportTab: React.FC<TransportTabProps> = ({
     duration,
     loading: routeLoading,
     error: routeError,
+    isFallback,
   } = useRoute(
     userLocation
       ? { latitude: userLocation.latitude, longitude: userLocation.longitude }
       : null,
     destinationCoordinates || null
   );
+
+  // Determine if flight is needed (distance > 500km or duration > 8 hours)
+  const needsFlight = distance
+    ? distance > 500000 || (duration && duration > 28800)
+    : false;
+
+  // Determine fastest transport method based on distance and duration
+  // Note: This is based on driving route, but we estimate other methods
+  const getFastestTransportMethod = (): { method: string; icon: string } => {
+    if (!distance || !duration)
+      return { method: "Calculating...", icon: "clock-outline" };
+
+    const distanceKm = distance / 1000;
+    const durationHours = duration / 3600;
+    const avgSpeed = distanceKm / durationHours; // km/h (driving speed)
+
+    // If very short distance - walking/cycling
+    if (distanceKm < 2) {
+      return { method: "Walking/Cycling", icon: "walk" };
+    }
+
+    // If short distance but slow speed (city traffic) - transit might be faster
+    // But we can't know for sure without calculating transit route
+    // So we'll be conservative and say driving unless it's clearly a long route
+    if (distanceKm < 20 && avgSpeed < 40) {
+      // In city with traffic, transit might be similar or slightly better
+      // But since we calculated driving, we'll show driving as it's what we have
+      return { method: "Driving", icon: "car" };
+    }
+
+    // If medium distance - train might be faster, but we don't have transit calculation
+    // So we'll show driving since that's what we calculated
+    if (distanceKm < 300) {
+      return { method: "Driving", icon: "car" };
+    }
+
+    // If long distance - flight is definitely faster
+    if (distanceKm >= 500 || durationHours >= 8) {
+      return { method: "Flight", icon: "airplane" };
+    }
+
+    // Default - driving (for highway routes)
+    return { method: "Driving", icon: "car" };
+  };
+
+  const fastestMethod = getFastestTransportMethod();
 
   const formatDistance = (meters: number | null): string => {
     if (!meters) return "Calculating...";
@@ -94,19 +141,26 @@ export const TransportTab: React.FC<TransportTabProps> = ({
       color: "#9B59B6",
       action: () => getTransitDirections("transit"), // Google Maps uses transit for train
     },
-    {
-      id: "flight",
-      title: "Flight",
-      icon: "airplane",
-      description: "Book flights to your destination",
-      color: "#4A90E2",
-      action: () => {
-        const searchQuery = encodeURIComponent(`flights to ${destination}`);
-        Linking.openURL(
-          `https://www.google.com/travel/flights?q=${searchQuery}`
-        );
-      },
-    },
+    // Only show flight option if distance requires it (over 500km or 8+ hours)
+    ...(needsFlight
+      ? [
+          {
+            id: "flight",
+            title: "Flight",
+            icon: "airplane",
+            description: "Book flights to your destination",
+            color: "#4A90E2",
+            action: () => {
+              const searchQuery = encodeURIComponent(
+                `flights to ${destination}`
+              );
+              Linking.openURL(
+                `https://www.google.com/travel/flights?q=${searchQuery}`
+              );
+            },
+          },
+        ]
+      : []),
     {
       id: "directions",
       title: "Driving Directions",
@@ -155,21 +209,40 @@ export const TransportTab: React.FC<TransportTabProps> = ({
                 Calculating route...
               </Text>
             </View>
-          ) : route.length > 0 ? (
-            <View style={transportStyles.routeDetails}>
-              <View style={transportStyles.routeDetailItem}>
-                <Icon name="map-marker-distance" size={20} color="#4A90E2" />
-                <Text style={transportStyles.routeDetailText}>
-                  {formatDistance(distance)}
+          ) : route.length > 0 && !isFallback ? (
+            <View>
+              <View style={transportStyles.routeDetails}>
+                <View style={transportStyles.routeDetailItem}>
+                  <Icon name="map-marker-distance" size={20} color="#4A90E2" />
+                  <Text style={transportStyles.routeDetailText}>
+                    {formatDistance(distance)}
+                  </Text>
+                </View>
+                <View style={transportStyles.routeDetailItem}>
+                  <Icon name="clock-outline" size={20} color="#4A90E2" />
+                  <Text style={transportStyles.routeDetailText}>
+                    {formatDuration(duration)}
+                  </Text>
+                </View>
+              </View>
+              <View style={transportStyles.fastestMethodContainer}>
+                <Icon name="car" size={16} color="#4A90E2" />
+                <Text style={transportStyles.fastestMethodText}>
+                  Driving route calculated
                 </Text>
               </View>
-              <View style={transportStyles.routeDetailItem}>
-                <Icon name="clock-outline" size={20} color="#4A90E2" />
-                <Text style={transportStyles.routeDetailText}>
-                  {formatDuration(duration)}
+              <View style={transportStyles.transitHint}>
+                <Icon name="information-outline" size={14} color="#666666" />
+                <Text style={transportStyles.transitHintText}>
+                  Check transit options below for bus/train routes (may be
+                  faster in cities)
                 </Text>
               </View>
             </View>
+          ) : isFallback ? (
+            <Text style={transportStyles.routeInfo}>
+              Calculating route... Use options below for directions
+            </Text>
           ) : null}
           <View style={transportStyles.transitHint}>
             <Icon name="information-outline" size={16} color="#666666" />
@@ -200,7 +273,7 @@ export const TransportTab: React.FC<TransportTabProps> = ({
               { backgroundColor: `${option.color}20` },
             ]}
           >
-            <Icon name={option.icon} size={32} color={option.color} />
+            <Icon name={option.icon as any} size={32} color={option.color} />
           </View>
           <View style={transportStyles.content}>
             <Text style={transportStyles.optionTitle}>{option.title}</Text>
@@ -328,6 +401,20 @@ const transportStyles = StyleSheet.create({
     flexDirection: "row",
     gap: 24,
     marginTop: 8,
+  },
+  fastestMethodContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+    gap: 6,
+  },
+  fastestMethodText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#4A90E2",
   },
   routeDetailItem: {
     flexDirection: "row",

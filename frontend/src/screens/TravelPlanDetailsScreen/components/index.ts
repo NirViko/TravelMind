@@ -13,4 +13,3 @@ export { MapPopup } from "./MapPopup";
 export { DayCard } from "./DayCard";
 export { DaySection } from "./DaySection";
 export { DestinationDetailCard } from "./DestinationDetailCard";
-

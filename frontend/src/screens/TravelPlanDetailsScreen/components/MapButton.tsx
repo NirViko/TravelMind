@@ -1,13 +1,16 @@
 import React from "react";
 import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 
 interface MapButtonProps {
   onPress: () => void;
   isMapVisible: boolean;
 }
 
-export const MapButton: React.FC<MapButtonProps> = ({ onPress, isMapVisible }) => {
+export const MapButton: React.FC<MapButtonProps> = ({
+  onPress,
+  isMapVisible,
+}) => {
   return (
     <TouchableOpacity
       style={[styles.button, isMapVisible && styles.buttonActive]}
@@ -21,7 +24,9 @@ export const MapButton: React.FC<MapButtonProps> = ({ onPress, isMapVisible }) =
           color={isMapVisible ? "#FFFFFF" : "#4A90E2"}
         />
       </View>
-      <Text style={[styles.buttonText, isMapVisible && styles.buttonTextActive]}>
+      <Text
+        style={[styles.buttonText, isMapVisible && styles.buttonTextActive]}
+      >
         {isMapVisible ? "Hide Map" : "Show Route"}
       </Text>
     </TouchableOpacity>
@@ -62,4 +67,3 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 });
-

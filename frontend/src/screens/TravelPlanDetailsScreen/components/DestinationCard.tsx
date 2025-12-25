@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { View, Image, TouchableOpacity } from "react-native";
 import { Text, Card, Divider } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { Destination } from "../../../types/travel";
 import { formatCurrency } from "../../../utils/currency";
-import { getDestinationImage, getDefaultTravelImage } from "../../../utils/images";
+import { getDestinationImage } from "../../../utils/images";
 import { openURL } from "../../../utils/linking";
 import { styles } from "../styles";
 
@@ -44,12 +44,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
     : getDestinationImage(destination.title, cityName);
 
   return (
-    <Card
-      style={[
-        styles.destinationCard,
-        isExpanded && styles.expandedCard,
-      ]}
-    >
+    <Card style={[styles.destinationCard, isExpanded && styles.expandedCard]}>
       <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
         <View style={styles.destinationImageContainer}>
           <Image
@@ -79,17 +74,20 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
                 {destination.estimatedDuration && (
                   <View style={styles.metaItem}>
                     <Icon name="clock-outline" size={16} color="#666666" />
-                    <Text style={styles.metaText}>{destination.estimatedDuration}</Text>
-                  </View>
-                )}
-                {destination.price !== undefined && destination.price !== null && (
-                  <View style={styles.metaItem}>
-                    <Icon name="wallet" size={16} color="#4A90E2" />
-                    <Text style={styles.priceText}>
-                      {formatCurrency(destination.price, currency)}
+                    <Text style={styles.metaText}>
+                      {destination.estimatedDuration}
                     </Text>
                   </View>
                 )}
+                {destination.price !== undefined &&
+                  destination.price !== null && (
+                    <View style={styles.metaItem}>
+                      <Icon name="wallet" size={16} color="#4A90E2" />
+                      <Text style={styles.priceText}>
+                        {formatCurrency(destination.price, currency)}
+                      </Text>
+                    </View>
+                  )}
               </View>
             </View>
             <Icon

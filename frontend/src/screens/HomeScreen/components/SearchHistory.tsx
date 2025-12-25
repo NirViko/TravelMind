@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useSearchHistoryStore } from "../../../store/searchHistoryStore";
 import { useDateFormatter } from "../../../hooks/useDateFormatter";
 
@@ -249,4 +249,3 @@ const historyStyles = StyleSheet.create({
     fontStyle: "italic",
   },
 });
-

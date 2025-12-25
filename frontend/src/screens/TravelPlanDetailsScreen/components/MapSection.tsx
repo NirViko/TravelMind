@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, TouchableOpacity, Text } from "react-native";
 import MapView, { Marker, Callout, Polyline } from "react-native-maps";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { TravelPlan, Destination } from "../../../types/travel";
 import { styles, getMarkerColor } from "../styles";
 import { MapPopup } from "./MapPopup";
@@ -36,10 +36,12 @@ export const MapSection: React.FC<MapSectionProps> = ({
 }) => {
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
   const { location: userLocation } = useUserLocation();
-  
+
   // Calculate route from user location to selected destination (or first destination if none selected)
-  const destinationForRoute = selectedDestinationForRoute || (sortedItinerary.length > 0 ? sortedItinerary[0] : null);
-  const { route, distance, duration } = useRoute(
+  const destinationForRoute =
+    selectedDestinationForRoute ||
+    (sortedItinerary.length > 0 ? sortedItinerary[0] : null);
+  const { route, distance, duration, isFallback } = useRoute(
     userLocation
       ? { latitude: userLocation.latitude, longitude: userLocation.longitude }
       : null,
@@ -65,7 +67,7 @@ export const MapSection: React.FC<MapSectionProps> = ({
         showsUserLocation={!!userLocation}
         showsMyLocationButton={!!userLocation}
       >
-        {route.length > 0 && (
+        {route.length > 0 && !isFallback && (
           <Polyline
             coordinates={route}
             strokeColor="#4A90E2"
@@ -129,15 +131,17 @@ export const MapSection: React.FC<MapSectionProps> = ({
                 onMarkerPress?.(restaurantDestination as Destination);
               }}
             >
-              <Callout onPress={() => {
-                const restaurantDestination = {
-                  ...restaurant,
-                  coordinates: restaurant.coordinates,
-                  title: restaurant.name,
-                  visitOrder: 999 + index,
-                };
-                onMarkerPress?.(restaurantDestination as Destination);
-              }}>
+              <Callout
+                onPress={() => {
+                  const restaurantDestination = {
+                    ...restaurant,
+                    coordinates: restaurant.coordinates,
+                    title: restaurant.name,
+                    visitOrder: 999 + index,
+                  };
+                  onMarkerPress?.(restaurantDestination as Destination);
+                }}
+              >
                 <MapPopup
                   title={restaurant.name}
                   subtitle={restaurant.description}
@@ -169,17 +173,19 @@ export const MapSection: React.FC<MapSectionProps> = ({
                 }
               }}
             >
-              <Callout onPress={() => {
-                if (hotel.coordinates) {
-                  const hotelDestination = {
-                    ...hotel,
-                    coordinates: hotel.coordinates,
-                    title: hotel.name,
-                    visitOrder: 1999 + index,
-                  };
-                  onMarkerPress?.(hotelDestination as Destination);
-                }
-              }}>
+              <Callout
+                onPress={() => {
+                  if (hotel.coordinates) {
+                    const hotelDestination = {
+                      ...hotel,
+                      coordinates: hotel.coordinates,
+                      title: hotel.name,
+                      visitOrder: 1999 + index,
+                    };
+                    onMarkerPress?.(hotelDestination as Destination);
+                  }
+                }}
+              >
                 <MapPopup
                   title={hotel.name}
                   subtitle={hotel.description}
@@ -197,20 +203,21 @@ export const MapSection: React.FC<MapSectionProps> = ({
             </Marker>
           ))}
       </MapView>
-      
+
       {/* Route info banner */}
       {route.length > 0 && destinationForRoute && userLocation && (
         <View style={styles.routeInfoBanner}>
           <View style={styles.routeInfoContent}>
             <Icon name="map-marker-path" size={20} color="#4A90E2" />
             <Text style={styles.routeInfoText} numberOfLines={1}>
-              Route to: {destinationForRoute.title || destinationForRoute.name}
+              Route to: {destinationForRoute.title}
             </Text>
             <TouchableOpacity
               onPress={() => {
                 // Clear selected destination to show route to first destination
                 if (onMarkerPress) {
-                  const firstDest = sortedItinerary.length > 0 ? sortedItinerary[0] : null;
+                  const firstDest =
+                    sortedItinerary.length > 0 ? sortedItinerary[0] : null;
                   if (firstDest) {
                     onMarkerPress(firstDest);
                   }
@@ -223,7 +230,7 @@ export const MapSection: React.FC<MapSectionProps> = ({
           </View>
         </View>
       )}
-      
+
       {!isExpanded && (
         <>
           <TouchableOpacity

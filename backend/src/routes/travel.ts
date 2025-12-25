@@ -14,7 +14,8 @@ router.post("/plan", async (req: Request, res: Response) => {
     if (!startDate || !endDate || !destination || !budget) {
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: startDate, endDate, destination, budget",
+        error:
+          "Missing required fields: startDate, endDate, destination, budget",
       });
     }
 
@@ -42,35 +43,44 @@ router.post("/plan", async (req: Request, res: Response) => {
     // Create prompt for AI
     const prompt = `You are a travel planning expert. Create a detailed travel itinerary for ${destination} from ${startDate} to ${endDate} (${totalDays} days) with a budget of $${budget} USD.
 
+CRITICAL REQUIREMENTS - READ CAREFULLY:
+- You MUST use ONLY REAL, EXISTING places that actually exist in ${destination}
+- Do NOT invent, make up, or create fictional places
+- Do NOT use generic names like "City Center" or "Main Square" unless they are the actual official names
+- Research actual tourist attractions, museums, landmarks, parks, and points of interest in ${destination}
+- Use the EXACT official names of places as they appear in travel guides, official websites, or Google Maps
+- If you are not certain a place exists, do not include it
+
 IMPORTANT: Return ONLY valid JSON, no additional text before or after.
 
 Requirements:
 1. Create a day-by-day itinerary with 3-5 specific destinations/attractions per day
 2. Each destination must include:
-   - Title (name of the place/attraction)
-   - Description (detailed description of what to see/do there, 2-3 sentences)
-   - Coordinates (real latitude and longitude as numbers, accurate for ${destination})
+   - Title (REAL, EXACT name of an ACTUAL tourist attraction/landmark that EXISTS in ${destination}. Examples: "Eiffel Tower" (Paris), "Colosseum" (Rome), "Statue of Liberty" (New York). Do NOT use made-up names)
+   - Description (detailed description of what to see/do there, 2-3 sentences - describe what actually exists at this real location)
+   - Coordinates (REAL and ACCURATE latitude and longitude as numbers - you MUST use the actual coordinates of the REAL place. Look up the exact coordinates from Google Maps or official sources. Do NOT approximate or invent coordinates. Latitude must be between -90 and 90, longitude between -180 and 180)
    - Visit order (sequential number starting from 1)
    - Estimated duration (e.g., "2 hours", "Half day", "Full day")
-   - Image URL (use a real image URL from Unsplash or similar: "https://images.unsplash.com/photo-..." or placeholder if not available)
-   - Price (entry/admission price in local currency if applicable, null if free)
+   - Image URL (use a real image URL from Unsplash or similar: "https://images.unsplash.com/photo-..." or null if not available)
+   - Price (entry/admission price in local currency if applicable, null if free - use realistic prices for the actual place)
    - Ticket link (URL to buy tickets if applicable, null if not needed)
 3. Include 2-3 hotel recommendations (as an array) with:
-   - Hotel name (real or realistic hotel name in ${destination})
-   - Description (2-3 sentences about the hotel)
+   - Hotel name (REAL hotel name that EXISTS in ${destination}. Use actual hotel names from booking sites. Do NOT invent hotel names)
+   - Description (2-3 sentences about the hotel - describe what actually exists)
+   - Coordinates (REAL and ACCURATE latitude and longitude of the actual hotel location)
    - Booking links (use format: "https://www.booking.com/hotel/...", "https://www.expedia.com/...", etc. or "N/A" if not available)
    - Estimated price per night in local currency (realistic for the destination and budget)
 4. Determine the local currency based on the destination (e.g., EUR for Europe, GBP for UK, JPY for Japan, USD for US, etc.)
 5. Calculate estimated total cost for the trip in local currency (should be close to but under the budget)
 6. Include 5-8 restaurant recommendations in the area with:
-   - Restaurant name
-   - Description (2-3 sentences about the cuisine and atmosphere)
+   - Restaurant name (REAL restaurant names that ACTUALLY EXIST in ${destination}. Use actual restaurant names from Google Maps, TripAdvisor, or similar. Do NOT invent restaurant names)
+   - Description (2-3 sentences about the cuisine and atmosphere - describe what actually exists)
    - Cuisine type (e.g., "Italian", "French", "Asian Fusion")
    - Price range (e.g., "$", "$$", "$$$", "$$$$")
-   - Coordinates (latitude and longitude)
-   - Rating (1-5 stars)
-   - Website URL (if available)
-   - Image URL (if available)
+   - Coordinates (REAL and ACCURATE latitude and longitude - use the exact coordinates of the actual restaurant location from Google Maps)
+   - Rating (1-5 stars - use realistic ratings)
+   - Website URL (if available, or null)
+   - Image URL (if available, or null)
 7. Include 3-5 travel recommendations/tips as an array
 
 Return the response as a valid JSON object with this EXACT structure (no markdown, no code blocks):
@@ -129,14 +139,36 @@ Return the response as a valid JSON object with this EXACT structure (no markdow
   "recommendations": ["<tip 1>", "<tip 2>", ...]
 }
 
-Make sure all coordinates are real and accurate for the locations in ${destination}. Return ONLY valid JSON, no additional text.`;
+CRITICAL VALIDATION RULES:
+1. ALL PLACES MUST BE REAL AND EXISTING:
+   - Destinations: Use ONLY actual tourist attractions, museums, landmarks, parks that REALLY EXIST in ${destination}
+   - Hotels: Use ONLY real hotel names that ACTUALLY EXIST in ${destination}
+   - Restaurants: Use ONLY real restaurant names that ACTUALLY EXIST in ${destination}
+   - Do NOT create fictional places, generic names, or approximate locations
+   - If you are unsure if a place exists, do not include it
+
+2. ALL COORDINATES MUST BE REAL AND ACCURATE:
+   - Use actual coordinates from Google Maps, official websites, or verified sources
+   - For destinations: Exact coordinates of the real tourist attraction/landmark
+   - For restaurants: Exact coordinates of the actual restaurant location
+   - For hotels: Exact coordinates of the actual hotel location
+   - Do NOT invent, approximate, or guess coordinates - this causes navigation errors
+   - Verify: latitude between -90 and 90, longitude between -180 and 180
+
+3. VERIFICATION:
+   - Before including any place, verify it actually exists in ${destination}
+   - Use official names as they appear in travel guides or Google Maps
+   - Prefer well-known, established places over obscure or potentially fictional ones
+
+Return ONLY valid JSON, no additional text.`;
 
     // Call AI to generate travel plan using chat completion
     // Convert prompt to chat messages format
     const messages = [
       {
         role: "system" as const,
-        content: "You are a travel planning expert. Create detailed travel itineraries in JSON format.",
+        content:
+          "You are a travel planning expert with access to real-world travel data. You MUST use ONLY real, existing places that actually exist in the specified destination. Never invent, make up, or create fictional places. Always verify place names and coordinates before including them. Use exact official names and accurate coordinates from verified sources like Google Maps. If you are unsure if a place exists, do not include it.",
       },
       {
         role: "user" as const,
@@ -161,68 +193,82 @@ Make sure all coordinates are real and accurate for the locations in ${destinati
       // Get content from chat completion response
       const content = aiResponse.content || "";
       let jsonString = content.trim();
-      
+
       // Remove markdown code blocks if present
       jsonString = jsonString.replace(/```json\s*/g, "").replace(/```\s*/g, "");
-      
+
       // Try to extract JSON object from response
       let jsonMatch = jsonString.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         jsonString = jsonMatch[0];
       }
-      
+
       // Try to fix incomplete JSON
       try {
         travelPlan = JSON.parse(jsonString);
       } catch (parseError: any) {
         // If parsing fails, try to fix incomplete JSON
         console.log("Initial parse failed, attempting to fix JSON...");
-        
+
         // Fix incomplete numbers in coordinates (e.g., "34.764" -> "34.764000")
-        jsonString = jsonString.replace(/"longitude":\s*(\d+\.\d{1,5})(?=\s*[,\]}])/g, (match, num) => {
-          const parts = num.split('.');
-          if (parts[1] && parts[1].length < 6) {
-            const padded = num + '0'.repeat(6 - parts[1].length);
-            return `"longitude": ${padded}`;
+        jsonString = jsonString.replace(
+          /"longitude":\s*(\d+\.\d{1,5})(?=\s*[,\]}])/g,
+          (match: string, num: string) => {
+            const parts = num.split(".");
+            if (parts[1] && parts[1].length < 6) {
+              const padded = num + "0".repeat(6 - parts[1].length);
+              return `"longitude": ${padded}`;
+            }
+            return match;
           }
-          return match;
-        });
-        
-        jsonString = jsonString.replace(/"latitude":\s*(\d+\.\d{1,5})(?=\s*[,\]}])/g, (match, num) => {
-          const parts = num.split('.');
-          if (parts[1] && parts[1].length < 6) {
-            const padded = num + '0'.repeat(6 - parts[1].length);
-            return `"latitude": ${padded}`;
+        );
+
+        jsonString = jsonString.replace(
+          /"latitude":\s*(\d+\.\d{1,5})(?=\s*[,\]}])/g,
+          (match: string, num: string) => {
+            const parts = num.split(".");
+            if (parts[1] && parts[1].length < 6) {
+              const padded = num + "0".repeat(6 - parts[1].length);
+              return `"latitude": ${padded}`;
+            }
+            return match;
           }
-          return match;
-        });
-        
+        );
+
         // Try to close incomplete arrays/objects
         const openBraces = (jsonString.match(/\{/g) || []).length;
         const closeBraces = (jsonString.match(/\}/g) || []).length;
         const openBrackets = (jsonString.match(/\[/g) || []).length;
         const closeBrackets = (jsonString.match(/\]/g) || []).length;
-        
+
         // Add missing closing brackets
         if (openBrackets > closeBrackets) {
-          jsonString += ']'.repeat(openBrackets - closeBrackets);
+          jsonString += "]".repeat(openBrackets - closeBrackets);
         }
         if (openBraces > closeBraces) {
-          jsonString += '}'.repeat(openBraces - closeBraces);
+          jsonString += "}".repeat(openBraces - closeBraces);
         }
-        
+
         // Try parsing again
         try {
           travelPlan = JSON.parse(jsonString);
         } catch (secondError: any) {
           // Last resort: try to extract what we can by finding the last complete restaurant object
-          console.error("JSON parsing failed after fixes:", secondError.message);
-          
+          console.error(
+            "JSON parsing failed after fixes:",
+            secondError.message
+          );
+
           // Try to extract up to the last complete restaurant
-          const restaurantsMatch = jsonString.match(/"restaurants":\s*\[([\s\S]*?)\]/);
+          const restaurantsMatch = jsonString.match(
+            /"restaurants":\s*\[([\s\S]*?)\]/
+          );
           if (restaurantsMatch) {
             // Remove incomplete restaurants array and try again
-            const beforeRestaurants = jsonString.substring(0, jsonString.indexOf('"restaurants"'));
+            const beforeRestaurants = jsonString.substring(
+              0,
+              jsonString.indexOf('"restaurants"')
+            );
             const fixedJson = beforeRestaurants + '"restaurants": []}';
             try {
               travelPlan = JSON.parse(fixedJson);
@@ -230,60 +276,133 @@ Make sure all coordinates are real and accurate for the locations in ${destinati
             } catch {
               throw new Error(
                 `Failed to parse AI response. The response may be incomplete. ` +
-                `Error: ${secondError.message}. ` +
-                `Response preview: ${jsonString.substring(Math.max(0, jsonString.length - 500))}`
+                  `Error: ${secondError.message}. ` +
+                  `Response preview: ${jsonString.substring(
+                    Math.max(0, jsonString.length - 500)
+                  )}`
               );
             }
           } else {
             throw new Error(
               `Failed to parse AI response. The response may be incomplete. ` +
-              `Error: ${secondError.message}. ` +
-              `Response preview: ${jsonString.substring(Math.max(0, jsonString.length - 500))}`
+                `Error: ${secondError.message}. ` +
+                `Response preview: ${jsonString.substring(
+                  Math.max(0, jsonString.length - 500)
+                )}`
             );
           }
         }
       }
-      
+
       // Validate required fields
       if (!travelPlan.destination || !travelPlan.itinerary) {
         throw new Error("AI response missing required fields");
       }
-      
+
       // Ensure itinerary is an array
       if (!Array.isArray(travelPlan.itinerary)) {
         throw new Error("Itinerary must be an array");
       }
-      
+
       // Handle both old format (hotel) and new format (hotels)
       if (travelPlan.hotel && !travelPlan.hotels) {
         travelPlan.hotels = [travelPlan.hotel];
         travelPlan.selectedHotelIndex = 0;
       }
-      
+
       // Ensure hotels is an array
       if (!travelPlan.hotels || !Array.isArray(travelPlan.hotels)) {
         throw new Error("Hotels must be an array");
       }
-      
+
       // Set default currency if not provided
       if (!travelPlan.currency) {
         travelPlan.currency = "USD";
       }
-      
+
       // Ensure restaurants is an array (if provided)
       if (!travelPlan.restaurants) {
         travelPlan.restaurants = [];
       } else if (!Array.isArray(travelPlan.restaurants)) {
         travelPlan.restaurants = [];
       }
-      
+
+      // Validate coordinates for all destinations
+      if (travelPlan.itinerary && Array.isArray(travelPlan.itinerary)) {
+        travelPlan.itinerary = travelPlan.itinerary.filter((dest: any) => {
+          if (
+            !dest.coordinates ||
+            typeof dest.coordinates.latitude !== "number" ||
+            typeof dest.coordinates.longitude !== "number"
+          ) {
+            console.warn(`Invalid coordinates for destination: ${dest.title}`);
+            return false;
+          }
+          const lat = dest.coordinates.latitude;
+          const lng = dest.coordinates.longitude;
+          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            console.warn(
+              `Out of range coordinates for destination: ${dest.title} (${lat}, ${lng})`
+            );
+            return false;
+          }
+          return true;
+        });
+      }
+
+      // Validate coordinates for restaurants
+      if (travelPlan.restaurants && Array.isArray(travelPlan.restaurants)) {
+        travelPlan.restaurants = travelPlan.restaurants.filter((rest: any) => {
+          if (
+            !rest.coordinates ||
+            typeof rest.coordinates.latitude !== "number" ||
+            typeof rest.coordinates.longitude !== "number"
+          ) {
+            console.warn(`Invalid coordinates for restaurant: ${rest.name}`);
+            return false;
+          }
+          const lat = rest.coordinates.latitude;
+          const lng = rest.coordinates.longitude;
+          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            console.warn(
+              `Out of range coordinates for restaurant: ${rest.name} (${lat}, ${lng})`
+            );
+            return false;
+          }
+          return true;
+        });
+      }
+
+      // Validate coordinates for hotels
+      if (travelPlan.hotels && Array.isArray(travelPlan.hotels)) {
+        travelPlan.hotels = travelPlan.hotels.filter((hotel: any) => {
+          if (hotel.coordinates) {
+            if (
+              typeof hotel.coordinates.latitude !== "number" ||
+              typeof hotel.coordinates.longitude !== "number"
+            ) {
+              console.warn(`Invalid coordinates for hotel: ${hotel.name}`);
+              return false;
+            }
+            const lat = hotel.coordinates.latitude;
+            const lng = hotel.coordinates.longitude;
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+              console.warn(
+                `Out of range coordinates for hotel: ${hotel.name} (${lat}, ${lng})`
+              );
+              return false;
+            }
+          }
+          return true;
+        });
+      }
     } catch (parseError: any) {
       const content = aiResponse.content || "";
       console.error("Failed to parse AI response:", content);
       console.error("Parse error:", parseError);
       throw new Error(
         `AI returned invalid JSON: ${parseError.message}. ` +
-        `Response preview: ${content.substring(0, 300)}`
+          `Response preview: ${content.substring(0, 300)}`
       );
     }
 
@@ -304,4 +423,3 @@ Make sure all coordinates are real and accurate for the locations in ${destinati
 });
 
 export default router;
-

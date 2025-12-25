@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { View, Image, TouchableOpacity } from "react-native";
 import { Text, Card } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { Restaurant } from "../../../types/travel";
-import { getRestaurantImage, getDefaultRestaurantImage } from "../../../utils/images";
+import {
+  getRestaurantImage,
+  getDefaultRestaurantImage,
+} from "../../../utils/images";
 import { openURL } from "../../../utils/linking";
 import { styles } from "../styles";
 
@@ -50,7 +53,9 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
         {restaurant.rating && (
           <View style={styles.ratingBadge}>
             <Icon name="star" size={16} color="#FFA500" />
-            <Text style={styles.ratingText}>{restaurant.rating.toFixed(1)}</Text>
+            <Text style={styles.ratingText}>
+              {restaurant.rating.toFixed(1)}
+            </Text>
           </View>
         )}
       </View>

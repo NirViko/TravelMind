@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Image, TouchableOpacity } from "react-native";
 import { Text, Card, RadioButton } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { Hotel } from "../../../types/travel";
 import { formatCurrency } from "../../../utils/currency";
 import { getHotelImage, getDefaultHotelImage } from "../../../utils/images";
@@ -26,17 +26,12 @@ export const HotelCard: React.FC<HotelCardProps> = ({
   cityName,
 }) => {
   const [imageError, setImageError] = useState(false);
-  
+
   // Get hotel image - search by hotel name and city
   const imageUrl = getHotelImage(hotel.name, cityName);
 
   return (
-    <Card
-      style={[
-        styles.hotelCard,
-        isSelected && styles.selectedHotelCard,
-      ]}
-    >
+    <Card style={[styles.hotelCard, isSelected && styles.selectedHotelCard]}>
       <TouchableOpacity onPress={() => onSelect(index)} activeOpacity={0.9}>
         <View style={styles.hotelImageContainer}>
           <Image
@@ -60,9 +55,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({
           <Text variant="titleLarge" style={styles.hotelName}>
             {hotel.name}
           </Text>
-          <Text style={styles.hotelDescription}>
-            {hotel.description}
-          </Text>
+          <Text style={styles.hotelDescription}>{hotel.description}</Text>
           {hotel.estimatedPrice && (
             <View style={styles.hotelPriceContainer}>
               <Icon name="wallet" size={18} color="#4A90E2" />
@@ -73,38 +66,42 @@ export const HotelCard: React.FC<HotelCardProps> = ({
           )}
           {isSelected && (
             <View style={styles.bookingLinksContainer}>
-              {hotel.bookingLinks.booking && hotel.bookingLinks.booking !== "N/A" && (
-                <TouchableOpacity
-                  style={styles.bookingButton}
-                  onPress={() => openURL(hotel.bookingLinks.booking)}
-                >
-                  <Text style={styles.bookingButtonText}>Booking.com</Text>
-                </TouchableOpacity>
-              )}
-              {hotel.bookingLinks.expedia && hotel.bookingLinks.expedia !== "N/A" && (
-                <TouchableOpacity
-                  style={styles.bookingButton}
-                  onPress={() => openURL(hotel.bookingLinks.expedia)}
-                >
-                  <Text style={styles.bookingButtonText}>Expedia</Text>
-                </TouchableOpacity>
-              )}
-              {hotel.bookingLinks.agoda && hotel.bookingLinks.agoda !== "N/A" && (
-                <TouchableOpacity
-                  style={styles.bookingButton}
-                  onPress={() => openURL(hotel.bookingLinks.agoda)}
-                >
-                  <Text style={styles.bookingButtonText}>Agoda</Text>
-                </TouchableOpacity>
-              )}
-              {hotel.bookingLinks.hotels && hotel.bookingLinks.hotels !== "N/A" && (
-                <TouchableOpacity
-                  style={styles.bookingButton}
-                  onPress={() => openURL(hotel.bookingLinks.hotels)}
-                >
-                  <Text style={styles.bookingButtonText}>Hotels.com</Text>
-                </TouchableOpacity>
-              )}
+              {hotel.bookingLinks.booking &&
+                hotel.bookingLinks.booking !== "N/A" && (
+                  <TouchableOpacity
+                    style={styles.bookingButton}
+                    onPress={() => openURL(hotel.bookingLinks.booking)}
+                  >
+                    <Text style={styles.bookingButtonText}>Booking.com</Text>
+                  </TouchableOpacity>
+                )}
+              {hotel.bookingLinks.expedia &&
+                hotel.bookingLinks.expedia !== "N/A" && (
+                  <TouchableOpacity
+                    style={styles.bookingButton}
+                    onPress={() => openURL(hotel.bookingLinks.expedia)}
+                  >
+                    <Text style={styles.bookingButtonText}>Expedia</Text>
+                  </TouchableOpacity>
+                )}
+              {hotel.bookingLinks.agoda &&
+                hotel.bookingLinks.agoda !== "N/A" && (
+                  <TouchableOpacity
+                    style={styles.bookingButton}
+                    onPress={() => openURL(hotel.bookingLinks.agoda)}
+                  >
+                    <Text style={styles.bookingButtonText}>Agoda</Text>
+                  </TouchableOpacity>
+                )}
+              {hotel.bookingLinks.hotels &&
+                hotel.bookingLinks.hotels !== "N/A" && (
+                  <TouchableOpacity
+                    style={styles.bookingButton}
+                    onPress={() => openURL(hotel.bookingLinks.hotels)}
+                  >
+                    <Text style={styles.bookingButtonText}>Hotels.com</Text>
+                  </TouchableOpacity>
+                )}
             </View>
           )}
         </Card.Content>

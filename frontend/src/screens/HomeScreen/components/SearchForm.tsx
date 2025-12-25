@@ -1,9 +1,16 @@
 import React from "react";
-import { View, TextInput, ImageBackground, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  TextInput,
+  ImageBackground,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { Button } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Platform } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { styles } from "../styles";
 import { getCurrencyForDestination } from "../../../utils/currency";
 import { SearchHistory } from "./SearchHistory";
@@ -158,7 +165,9 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           </Text>
           <TextInput
             style={styles.input}
-            placeholder={`Budget (${destination ? getCurrencyForDestination(destination) : "USD"})`}
+            placeholder={`Budget (${
+              destination ? getCurrencyForDestination(destination) : "USD"
+            })`}
             placeholderTextColor="#999999"
             value={budget}
             onChangeText={onBudgetChange}

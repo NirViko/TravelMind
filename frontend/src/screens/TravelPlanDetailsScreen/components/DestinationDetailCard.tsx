@@ -1,6 +1,14 @@
 import React from "react";
-import { View, Image, ScrollView, TouchableOpacity, Text, Modal, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import {
+  View,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  Modal,
+  StyleSheet,
+} from "react-native";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { Destination } from "../../../types/travel";
 import { formatCurrency } from "../../../utils/currency";
 import { openURL } from "../../../utils/linking";
@@ -50,7 +58,12 @@ export const DestinationDetailCard: React.FC<DestinationDetailCardProps> = ({
                 resizeMode="cover"
               />
             ) : (
-              <View style={[detailCardStyles.image, detailCardStyles.placeholderImage]}>
+              <View
+                style={[
+                  detailCardStyles.image,
+                  detailCardStyles.placeholderImage,
+                ]}
+              >
                 <Icon name="image-outline" size={48} color="#CCCCCC" />
               </View>
             )}
@@ -59,10 +72,14 @@ export const DestinationDetailCard: React.FC<DestinationDetailCardProps> = ({
             <View style={detailCardStyles.content}>
               <View style={detailCardStyles.header}>
                 <View style={detailCardStyles.orderBadge}>
-                  <Text style={detailCardStyles.orderText}>{destination.visitOrder}</Text>
+                  <Text style={detailCardStyles.orderText}>
+                    {destination.visitOrder}
+                  </Text>
                 </View>
                 <View style={detailCardStyles.titleContainer}>
-                  <Text style={detailCardStyles.title}>{destination.title}</Text>
+                  <Text style={detailCardStyles.title}>
+                    {destination.title}
+                  </Text>
                   {destination.estimatedDuration && (
                     <View style={detailCardStyles.metaRow}>
                       <Icon name="clock-outline" size={16} color="#666666" />
@@ -74,17 +91,19 @@ export const DestinationDetailCard: React.FC<DestinationDetailCardProps> = ({
                 </View>
               </View>
 
-              <Text style={detailCardStyles.description}>{destination.description}</Text>
+              <Text style={detailCardStyles.description}>
+                {destination.description}
+              </Text>
 
-              {destination.price !== undefined && destination.price !== null && (
-                <View style={detailCardStyles.priceContainer}>
-                  <Icon name="wallet" size={20} color="#4A90E2" />
-                  <Text style={detailCardStyles.price}>
-                    {formatCurrency(destination.price, currency)}
-                  </Text>
-                </View>
-              )}
-
+              {destination.price !== undefined &&
+                destination.price !== null && (
+                  <View style={detailCardStyles.priceContainer}>
+                    <Icon name="wallet" size={20} color="#4A90E2" />
+                    <Text style={detailCardStyles.price}>
+                      {formatCurrency(destination.price, currency)}
+                    </Text>
+                  </View>
+                )}
 
               {destination.ticketLink && (
                 <TouchableOpacity
@@ -92,7 +111,9 @@ export const DestinationDetailCard: React.FC<DestinationDetailCardProps> = ({
                   onPress={() => openURL(destination.ticketLink)}
                 >
                   <Icon name="ticket" size={20} color="#FFFFFF" />
-                  <Text style={detailCardStyles.ticketButtonText}>Buy Tickets</Text>
+                  <Text style={detailCardStyles.ticketButtonText}>
+                    Buy Tickets
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -229,4 +250,3 @@ const detailCardStyles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-

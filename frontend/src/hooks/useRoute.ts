@@ -16,6 +16,7 @@ interface UseRouteReturn {
   error: string | null;
   distance: number | null;
   duration: number | null;
+  isFallback: boolean; // Indicates if this is a fallback (straight line) route
 }
 
 // Calculate route using OSRM (Open Source Routing Machine) - free service
@@ -78,6 +79,7 @@ const calculateRoute = async (
       error: null,
       distance: route.distance, // in meters
       duration: route.duration, // in seconds
+      isFallback: false,
     };
   } catch (error: any) {
     console.error("Error calculating route:", error);
@@ -112,6 +114,7 @@ const calculateRoute = async (
       error: null, // Don't show error, just use fallback
       distance: distance,
       duration: duration,
+      isFallback: true, // Mark as fallback
     };
   }
 };
@@ -125,6 +128,7 @@ export const useRoute = (
   const [error, setError] = useState<string | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
+  const [isFallback, setIsFallback] = useState<boolean>(false);
 
   useEffect(() => {
     if (!origin || !destination) {
@@ -133,6 +137,7 @@ export const useRoute = (
       setDuration(null);
       setLoading(false);
       setError(null);
+      setIsFallback(false);
       return;
     }
 
@@ -167,6 +172,7 @@ export const useRoute = (
           setDistance(result.distance);
           setDuration(result.duration);
           setError(result.error);
+          setIsFallback(result.isFallback);
           setLoading(false);
         }
       } catch (err: any) {
@@ -205,6 +211,7 @@ export const useRoute = (
         setDistance(distance);
         setDuration(duration);
         setError(null);
+        setIsFallback(true);
         setLoading(false);
       }
     }, 10000); // 10 seconds timeout
@@ -228,5 +235,6 @@ export const useRoute = (
     error,
     distance,
     duration,
+    isFallback,
   };
 };

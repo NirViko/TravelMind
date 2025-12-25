@@ -1,12 +1,15 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 
 interface TabTitleProps {
   activeTab: string;
 }
 
-const tabInfo: Record<string, { label: string; icon: string }> = {
+const tabInfo: Record<
+  string,
+  { label: string; icon: keyof typeof Icon.glyphMap }
+> = {
   itinerary: {
     label: "Itinerary",
     icon: "map-marker",
@@ -52,4 +55,3 @@ const titleStyles = StyleSheet.create({
     color: "#000000",
   },
 });
-
