@@ -68,7 +68,7 @@ Requirements:
    - Hotel name (REAL hotel name that EXISTS in ${destination}. Use actual hotel names from booking sites. Do NOT invent hotel names)
    - Description (2-3 sentences about the hotel - describe what actually exists)
    - Coordinates (REAL and ACCURATE latitude and longitude of the actual hotel location)
-   - Booking links (use format: "https://www.booking.com/hotel/...", "https://www.expedia.com/...", etc. or "N/A" if not available)
+   - Booking links (CRITICAL: Use REAL, FUNCTIONAL booking URLs from sites like "https://www.booking.com/hotel/...", "https://www.expedia.com/...", "https://www.agoda.com/...", "https://www.hotels.com/..." for the specific hotel. These links MUST lead directly to the booking page where users can actually purchase a stay. If a real link is not available, use "N/A". Do NOT generate fake or generic booking links)
    - Estimated price per night in local currency (realistic for the destination and budget)
 4. Determine the local currency based on the destination (e.g., EUR for Europe, GBP for UK, JPY for Japan, USD for US, etc.)
 5. Calculate estimated total cost for the trip in local currency (should be close to but under the budget)
@@ -159,6 +159,12 @@ CRITICAL VALIDATION RULES:
    - Before including any place, verify it actually exists in ${destination}
    - Use official names as they appear in travel guides or Google Maps
    - Prefer well-known, established places over obscure or potentially fictional ones
+
+4. BOOKING LINKS:
+   - For hotels, provide REAL, FUNCTIONAL booking URLs.
+   - Ensure the links lead directly to the booking page for the specific hotel.
+   - If a real, functional link cannot be found, use "N/A" for that specific link.
+   - Do NOT generate fake or generic booking links.
 
 Return ONLY valid JSON, no additional text.`;
 
