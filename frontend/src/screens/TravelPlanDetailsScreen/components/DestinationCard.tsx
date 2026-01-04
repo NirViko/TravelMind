@@ -85,11 +85,6 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
     outputRange: [0, 200], // Adjust based on content height
   });
 
-  // Debug: Log image URLs
-  if (destination.imageUrl && destination.imageUrl !== "null") {
-    console.log(`Destination "${destination.title}" imageUrl:`, destination.imageUrl);
-  }
-
   return (
     <Animated.View
       style={[
@@ -97,8 +92,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
       ]}
     >
     <Card style={[styles.destinationCard, isExpanded && styles.expandedCard]}>
-      <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
-        <View style={styles.destinationImageContainer}>
+      <View style={styles.destinationCardWrapper}>
+        <TouchableOpacity onPress={onToggle} activeOpacity={0.9}>
+          <View style={styles.destinationImageContainer}>
           <Image
             source={{ uri: imageUrl }}
             style={styles.destinationImage}
@@ -109,10 +105,20 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
             }}
             onLoadStart={() => setImageError(false)}
           />
-          <View style={styles.orderBadgeOverlay}>
-            <View style={styles.orderBadge}>
-              <Text style={styles.orderText}>{destination.visitOrder}</Text>
+          {/* Overlay with order badge and price */}
+          <View style={styles.imageOverlay}>
+            <View style={styles.orderBadgeOverlay}>
+              <View style={styles.orderBadge}>
+                <Text style={styles.orderText}>{destination.visitOrder}</Text>
+              </View>
             </View>
+            {destination.price !== undefined && destination.price !== null && (
+              <View style={styles.priceOverlay}>
+                <Text style={styles.priceOverlayText}>
+                  {formatCurrency(destination.price, currency)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -171,6 +177,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
           </Animated.View>
         </Card.Content>
       </TouchableOpacity>
+      </View>
     </Card>
     </Animated.View>
   );

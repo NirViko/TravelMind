@@ -2,7 +2,11 @@
 export interface User {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
+  dateOfBirth?: string;
+  emailVerified?: boolean;
 }
 
 export interface TravelPlan {

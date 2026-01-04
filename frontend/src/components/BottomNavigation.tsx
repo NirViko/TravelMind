@@ -1,5 +1,6 @@
 import React from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { View, TouchableOpacity, Text } from "react-native";
+import { styles } from "./styles/BottomNavigation.styles";
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -22,19 +23,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.id}
-          style={[
-            styles.tab,
-            activeTab === tab.id && styles.activeTab,
-          ]}
+          style={[styles.tab, activeTab === tab.id && styles.activeTab]}
           onPress={() => onTabChange(tab.id)}
           activeOpacity={0.7}
         >
           <Text style={styles.icon}>{tab.icon}</Text>
           <Text
-            style={[
-              styles.label,
-              activeTab === tab.id && styles.activeLabel,
-            ]}
+            style={[styles.label, activeTab === tab.id && styles.activeLabel]}
           >
             {tab.label}
           </Text>
@@ -43,37 +38,3 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  tab: {
-    alignItems: "center",
-    flex: 1,
-    paddingVertical: 8,
-  },
-  activeTab: {
-    // Active state styling
-  },
-  icon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 12,
-    color: "#666666",
-  },
-  activeLabel: {
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-});
-

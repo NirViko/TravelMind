@@ -12,6 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "scheme": "travelmind",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.travelmind.app",

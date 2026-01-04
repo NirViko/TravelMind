@@ -262,8 +262,6 @@ Return ONLY valid JSON, no additional text.`;
         travelPlan = JSON.parse(jsonString);
       } catch (parseError: any) {
         // If parsing fails, try to fix incomplete JSON
-        console.log("Initial parse failed, attempting to fix JSON...");
-
         // Fix incomplete numbers in coordinates (e.g., "34.764" -> "34.764000")
         jsonString = jsonString.replace(
           /"longitude":\s*(\d+\.\d{1,5})(?=\s*[,\]}])/g,
@@ -361,18 +359,8 @@ Return ONLY valid JSON, no additional text.`;
       // Enhance with real photos from Google Places API
       if (process.env.GOOGLE_PLACES_API_KEY) {
         try {
-          console.log("📸 Fetching real photos from Google Places API...");
-          console.log(
-            `API Key configured: ${
-              process.env.GOOGLE_PLACES_API_KEY ? "Yes" : "No"
-            }`
-          );
-
           // Get photos for destinations
           if (travelPlan.itinerary && Array.isArray(travelPlan.itinerary)) {
-            console.log(
-              `Fetching photos for ${travelPlan.itinerary.length} destinations...`
-            );
             const destinationPhotos =
               await GooglePlacesService.getRealPlacePhotos(
                 travelPlan.itinerary.map((dest: any) => ({
@@ -390,16 +378,10 @@ Return ONLY valid JSON, no additional text.`;
               }
               return dest;
             });
-            console.log(
-              `✅ Found ${photosFound}/${travelPlan.itinerary.length} destination photos`
-            );
           }
 
           // Get photos for hotels
           if (travelPlan.hotels && Array.isArray(travelPlan.hotels)) {
-            console.log(
-              `Fetching photos for ${travelPlan.hotels.length} hotels...`
-            );
             const hotelPhotos = await GooglePlacesService.getRealPlacePhotos(
               travelPlan.hotels.map((hotel: any) => ({
                 name: hotel.name,
@@ -416,16 +398,10 @@ Return ONLY valid JSON, no additional text.`;
               }
               return hotel;
             });
-            console.log(
-              `✅ Found ${photosFound}/${travelPlan.hotels.length} hotel photos`
-            );
           }
 
           // Get photos for restaurants
           if (travelPlan.restaurants && Array.isArray(travelPlan.restaurants)) {
-            console.log(
-              `Fetching photos for ${travelPlan.restaurants.length} restaurants...`
-            );
             const restaurantPhotos =
               await GooglePlacesService.getRealPlacePhotos(
                 travelPlan.restaurants.map((rest: any) => ({
@@ -443,14 +419,7 @@ Return ONLY valid JSON, no additional text.`;
               }
               return rest;
             });
-            console.log(
-              `✅ Found ${photosFound}/${travelPlan.restaurants.length} restaurant photos`
-            );
           }
-
-          console.log(
-            "✅ Successfully processed photos from Google Places API"
-          );
         } catch (photoError: any) {
           console.warn(
             "⚠️  Error fetching photos from Google Places API, trying Unsplash:",
@@ -460,9 +429,6 @@ Return ONLY valid JSON, no additional text.`;
           await addUnsplashPhotos(travelPlan, destination);
         }
       } else {
-        console.log(
-          "📸 Google Places API not configured, using Unsplash for photos..."
-        );
         await addUnsplashPhotos(travelPlan, destination);
       }
 
@@ -640,8 +606,6 @@ Return ONLY valid JSON, no additional text.`;
  */
 async function addUnsplashPhotos(travelPlan: any, destination: string) {
   try {
-    console.log("📸 Fetching photos from Unsplash...");
-
     // Get photos for destinations
     if (travelPlan.itinerary && Array.isArray(travelPlan.itinerary)) {
       const destinationPhotos = await UnsplashService.getPhotosForPlaces(
@@ -698,8 +662,6 @@ async function addUnsplashPhotos(travelPlan: any, destination: string) {
         return rest;
       });
     }
-
-    console.log("✅ Successfully added Unsplash photos");
   } catch (error: any) {
     console.warn("⚠️  Error adding Unsplash photos:", error.message);
   }

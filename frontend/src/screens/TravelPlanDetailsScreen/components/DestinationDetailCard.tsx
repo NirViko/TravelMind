@@ -47,7 +47,7 @@ export const DestinationDetailCard: React.FC<DestinationDetailCardProps> = ({
               style={detailCardStyles.closeButton}
               onPress={onClose}
             >
-              <Icon name="close" size={24} color="#333333" />
+              <Icon name="close" size={24} color="#FFFFFF" />
             </TouchableOpacity>
 
             {destination.imageUrl ? (
@@ -80,7 +80,7 @@ export const DestinationDetailCard: React.FC<DestinationDetailCardProps> = ({
                   </Text>
                   {destination.estimatedDuration && (
                     <View style={detailCardStyles.metaRow}>
-                      <Icon name="clock-outline" size={16} color="#666666" />
+                      <Icon name="clock-outline" size={16} color="#CCCCCC" />
                       <Text style={detailCardStyles.metaText}>
                         {destination.estimatedDuration}
                       </Text>

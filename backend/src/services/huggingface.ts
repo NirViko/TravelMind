@@ -9,8 +9,6 @@ const HF_TOKEN = process.env.HUGGINGFACE_TOKEN;
 if (!HF_TOKEN) {
   console.warn("⚠️  HUGGINGFACE_TOKEN not found in environment variables");
   console.warn("   Make sure .env file exists in the backend directory");
-} else {
-  console.log("✅ Hugging Face token loaded successfully");
 }
 
 // Initialize HfInference
@@ -68,7 +66,6 @@ export class HuggingFaceService {
         };
       } catch (libError: any) {
         // If library fails (HTTP error, provider issue, etc.), try direct API call
-        console.log("Library call failed, trying direct API call:", libError.message);
         try {
           return await this.chatCompletionDirect(
             messages,
@@ -197,7 +194,6 @@ export class HuggingFaceService {
         // If library still uses old endpoint, use direct API call
         if (libError.message?.includes("no longer supported") || 
             libError.message?.includes("router.huggingface.co")) {
-          console.log("Using direct API call to new router endpoint");
           return await this.textGenerationDirect(prompt, model, options);
         }
         throw libError;

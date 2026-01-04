@@ -3,14 +3,14 @@ import { StyleSheet } from "react-native";
 export const transportStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1A1A1A",
     paddingHorizontal: 20,
     paddingTop: 8,
   },
   optionCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#2A2A2A",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -41,15 +41,15 @@ export const transportStyles = StyleSheet.create({
   optionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#000000",
+    color: "#FFFFFF",
     marginBottom: 4,
   },
   optionDescription: {
     fontSize: 14,
-    color: "#666666",
+    color: "#FFFFFF",
   },
   infoSection: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#2A2A2A",
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -68,11 +68,11 @@ export const transportStyles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: "#666666",
+    color: "#FFFFFF",
     lineHeight: 22,
   },
   routeCard: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#2A2A2A",
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -86,11 +86,11 @@ export const transportStyles = StyleSheet.create({
   routeTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#000000",
+    color: "#FFFFFF",
   },
   routeInfo: {
     fontSize: 14,
-    color: "#666666",
+    color: "#FFFFFF",
     fontStyle: "italic",
   },
   routeError: {
@@ -134,7 +134,7 @@ export const transportStyles = StyleSheet.create({
   },
   routeErrorHint: {
     fontSize: 12,
-    color: "#999999",
+    color: "#FFFFFF",
     marginTop: 4,
     fontStyle: "italic",
   },
@@ -143,13 +143,13 @@ export const transportStyles = StyleSheet.create({
     alignItems: "flex-start",
     marginTop: 12,
     padding: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#2A2A2A",
     borderRadius: 8,
     gap: 8,
   },
   transitHintText: {
     fontSize: 12,
-    color: "#666666",
+    color: "#FFFFFF",
     flex: 1,
     lineHeight: 18,
   },

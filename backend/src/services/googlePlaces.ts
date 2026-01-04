@@ -137,7 +137,6 @@ export class GooglePlacesService {
       const place = await this.searchPlace(placeName, coordinates);
 
       if (!place) {
-        console.log(`Place not found: ${placeName}`);
         return null;
       }
 
@@ -154,7 +153,6 @@ export class GooglePlacesService {
         return photoUrl;
       }
 
-      console.log(`No photos available for place: ${placeName}`);
       return null;
     } catch (error: any) {
       console.error(
@@ -193,11 +191,6 @@ export class GooglePlacesService {
             place.name,
             place.coordinates
           );
-          if (photoUrl) {
-            console.log(`✅ Found photo for: ${place.name}`);
-          } else {
-            console.log(`⚠️  No photo found for: ${place.name}`);
-          }
           return { name: place.name, photoUrl };
         } catch (error: any) {
           console.warn(

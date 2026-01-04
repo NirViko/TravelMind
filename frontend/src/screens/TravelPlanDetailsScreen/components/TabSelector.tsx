@@ -110,9 +110,9 @@ export const TabSelector: React.FC<TabSelectorProps> = ({
               activeOpacity={0.7}
             >
               <Icon
-                name={tab.icon}
-                size={isMinimized ? 18 : isExpanded ? 20 : 20}
-                color={isActive ? "#4A90E2" : "#666666"}
+                name={tab.icon as any}
+                size={20}
+                color={isActive ? "#4A90E2" : "#CCCCCC"}
               />
             </TouchableOpacity>
           </Animated.View>

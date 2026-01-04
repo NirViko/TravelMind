@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  Animated,
 } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useSearchHistoryStore } from "../../../store/searchHistoryStore";
@@ -26,11 +27,38 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
   const { history, isLoading, loadHistory, removeSearch, clearHistory } =
     useSearchHistoryStore();
   const { formatDateForDisplay } = useDateFormatter();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [rotateAnim] = useState(new Animated.Value(0));
+  const [heightAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(rotateAnim, {
+        toValue: isExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heightAnim, {
+        toValue: isExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [isExpanded, rotateAnim, heightAnim]);
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   const handleSelect = (item: any) => {
     onSelectSearch({
@@ -57,86 +85,116 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
   if (history.length === 0) {
     return (
       <View style={historyStyles.container}>
-        <View style={historyStyles.header}>
+        <TouchableOpacity
+          style={historyStyles.header}
+          onPress={toggleExpanded}
+          activeOpacity={0.7}
+        >
           <View style={historyStyles.headerLeft}>
-            <Icon name="history" size={20} color="#4A90E2" />
+            <Icon name="history" size={22} color="#4A90E2" />
             <Text style={historyStyles.title}>{STRINGS.recentSearches}</Text>
           </View>
-        </View>
-        <Text style={historyStyles.emptyText}>
-          {STRINGS.noRecentSearches}
-        </Text>
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <Icon name="chevron-down" size={24} color="#4A90E2" />
+          </Animated.View>
+        </TouchableOpacity>
+        {isExpanded && (
+          <Text style={historyStyles.emptyText}>
+            {STRINGS.noRecentSearches}
+          </Text>
+        )}
       </View>
     );
   }
 
   return (
     <View style={historyStyles.container}>
-      <View style={historyStyles.header}>
+      <TouchableOpacity
+        style={historyStyles.header}
+        onPress={toggleExpanded}
+        activeOpacity={0.7}
+      >
         <View style={historyStyles.headerLeft}>
-          <Icon name="history" size={20} color="#4A90E2" />
+          <Icon name="history" size={22} color="#4A90E2" />
           <Text style={historyStyles.title}>{STRINGS.recentSearches}</Text>
         </View>
-        {history.length > 0 && (
-          <TouchableOpacity
-            onPress={clearHistory}
-            style={historyStyles.clearButton}
-          >
-            <Text style={historyStyles.clearText}>{STRINGS.clear}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={historyStyles.scrollView}
-        contentContainerStyle={historyStyles.scrollContent}
-      >
-        {history.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={historyStyles.card}
-            onPress={() => handleSelect(item)}
-            activeOpacity={0.7}
-          >
+        <View style={historyStyles.headerRight}>
+          {isExpanded && history.length > 0 && (
             <TouchableOpacity
-              style={historyStyles.removeButton}
-              onPress={(e) => handleRemove(item.id, e)}
+              onPress={(e) => {
+                e.stopPropagation();
+                clearHistory();
+              }}
+              style={historyStyles.clearButton}
             >
-              <Icon name="close-circle" size={20} color="#CCCCCC" />
+              <Text style={historyStyles.clearText}>{STRINGS.clear}</Text>
             </TouchableOpacity>
+          )}
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <Icon name="chevron-down" size={24} color="#4A90E2" />
+          </Animated.View>
+        </View>
+      </TouchableOpacity>
 
-            <View style={historyStyles.cardContent}>
-              <View style={historyStyles.destinationRow}>
-                <Icon name="map-marker" size={16} color="#4A90E2" />
-                <Text style={historyStyles.destination} numberOfLines={1}>
-                  {item.destination}
-                </Text>
-              </View>
+      {isExpanded && (
+        <Animated.View
+          style={{
+            opacity: heightAnim,
+            overflow: "hidden",
+          }}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={historyStyles.scrollView}
+            contentContainerStyle={historyStyles.scrollContent}
+          >
+            {history.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={historyStyles.card}
+                onPress={() => handleSelect(item)}
+                activeOpacity={0.7}
+              >
+                <TouchableOpacity
+                  style={historyStyles.removeButton}
+                  onPress={(e) => handleRemove(item.id, e)}
+                >
+                  <Icon name="close-circle" size={20} color="#CCCCCC" />
+                </TouchableOpacity>
 
-              <View style={historyStyles.datesRow}>
-                <Icon name="calendar-start" size={14} color="#666666" />
-                <Text style={historyStyles.dateText}>
-                  {formatDateForDisplay(new Date(item.startDate))}
-                </Text>
-              </View>
+                <View style={historyStyles.cardContent}>
+                  <View style={historyStyles.destinationRow}>
+                    <Icon name="map-marker" size={18} color="#4A90E2" />
+                    <Text style={historyStyles.destination} numberOfLines={1}>
+                      {item.destination}
+                    </Text>
+                  </View>
 
-              <View style={historyStyles.datesRow}>
-                <Icon name="calendar-end" size={14} color="#666666" />
-                <Text style={historyStyles.dateText}>
-                  {formatDateForDisplay(new Date(item.endDate))}
-                </Text>
-              </View>
+                  <View style={historyStyles.datesRow}>
+                    <Icon name="calendar-start" size={14} color="#CCCCCC" />
+                    <Text style={historyStyles.dateText}>
+                      {formatDateForDisplay(new Date(item.startDate))}
+                    </Text>
+                  </View>
 
-              <View style={historyStyles.budgetRow}>
-                <Icon name="wallet" size={14} color="#4A90E2" />
-                <Text style={historyStyles.budgetText}>{item.budget}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+                  <View style={historyStyles.datesRow}>
+                    <Icon name="calendar-end" size={14} color="#CCCCCC" />
+                    <Text style={historyStyles.dateText}>
+                      {formatDateForDisplay(new Date(item.endDate))}
+                    </Text>
+                  </View>
+
+                  <View style={historyStyles.budgetRow}>
+                    <Icon name="wallet" size={16} color="#4A90E2" />
+                    <Text style={historyStyles.budgetText}>{item.budget}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      )}
     </View>
   );
 };

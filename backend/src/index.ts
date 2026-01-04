@@ -6,6 +6,7 @@ import compression from "compression";
 import dotenv from "dotenv";
 import aiRoutes from "./routes/ai";
 import travelRoutes from "./routes/travel";
+import authRoutes from "./routes/auth";
 
 // Load environment variables
 dotenv.config();
@@ -37,6 +38,9 @@ app.get("/api", (req: Request, res: Response) => {
     version: process.env.API_VERSION || "v1",
   });
 });
+
+// Auth routes
+app.use("/api/auth", authRoutes);
 
 // AI routes
 app.use("/api/ai", aiRoutes);

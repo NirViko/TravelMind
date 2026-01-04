@@ -81,12 +81,10 @@ export class UnsplashService {
         const photoUrl = await this.searchPhoto(query);
         if (photoUrl) {
           results.set(place.name, photoUrl);
-          console.log(`✅ Found Unsplash photo for: ${place.name}`);
         } else {
           // Use Unsplash Source as fallback
           const fallbackUrl = this.getUnsplashSourcePhoto(query);
           results.set(place.name, fallbackUrl);
-          console.log(`⚠️  Using Unsplash Source for: ${place.name}`);
         }
       } catch (error: any) {
         console.warn(`Error getting photo for ${place.name}:`, error.message);

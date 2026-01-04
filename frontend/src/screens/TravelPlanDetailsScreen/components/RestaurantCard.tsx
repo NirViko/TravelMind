@@ -24,12 +24,20 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
 
+  // Animation refs
+  const fadeAnimationRef = useRef(new Animated.Value(0));
+  const slideAnimationRef = useRef(new Animated.Value(50));
+
+  const fadeAnimation = fadeAnimationRef.current;
+  const slideAnimation = slideAnimationRef.current;
+
   const isValidImage =
     restaurant.imageUrl &&
     restaurant.imageUrl !== "null" &&
     restaurant.imageUrl !== "N/A" &&
     restaurant.imageUrl.trim() !== "" &&
-    (restaurant.imageUrl.startsWith("http") || restaurant.imageUrl.startsWith("https")) &&
+    (restaurant.imageUrl.startsWith("http") ||
+      restaurant.imageUrl.startsWith("https")) &&
     !imageErrors.has(restaurant.imageUrl) &&
     !imageError;
 
@@ -52,7 +60,8 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
         friction: 7,
       }),
     ]).start();
-  }, [fadeAnimation, slideAnimation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Animated.View
@@ -64,59 +73,72 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
       ]}
     >
       <Card style={styles.restaurantCard}>
-      <View style={styles.restaurantImageContainer}>
-        <Image
-          source={{ uri: imageError ? getDefaultRestaurantImage() : imageUrl }}
-          style={styles.restaurantImage}
-          resizeMode="cover"
-          onError={() => {
-            setImageError(true);
-            onImageError(imageUrl);
-          }}
-          onLoadStart={() => setImageError(false)}
-        />
-        {restaurant.rating && (
-          <View style={styles.ratingBadge}>
-            <Icon name="star" size={16} color="#FFA500" />
-            <Text style={styles.ratingText}>
-              {restaurant.rating.toFixed(1)}
-            </Text>
+        <View style={styles.restaurantCardWrapper}>
+          <View style={styles.restaurantImageContainer}>
+            <Image
+              source={{
+                uri: imageError ? getDefaultRestaurantImage() : imageUrl,
+              }}
+              style={styles.restaurantImage}
+              resizeMode="cover"
+              onError={() => {
+                setImageError(true);
+                onImageError(imageUrl);
+              }}
+              onLoadStart={() => setImageError(false)}
+            />
+            {/* Overlay with rating */}
+            <View style={styles.restaurantImageOverlay}>
+              {restaurant.rating && (
+                <View style={styles.ratingBadge}>
+                  <Icon name="star" size={16} color="#4A90E2" />
+                  <Text style={styles.ratingText}>
+                    {restaurant.rating.toFixed(1)}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-        )}
-      </View>
 
-      <Card.Content style={styles.restaurantCardContent}>
-        <Text variant="titleLarge" style={styles.restaurantName}>
-          {restaurant.name}
-        </Text>
-        <View style={styles.restaurantMeta}>
-          {restaurant.cuisine && (
-            <View style={styles.cuisineBadge}>
-              <Icon name="silverware-fork-knife" size={14} color="#4A90E2" />
-              <Text style={styles.cuisineText}>{restaurant.cuisine}</Text>
+          <Card.Content style={styles.restaurantCardContent}>
+            <Text variant="titleLarge" style={styles.restaurantName}>
+              {restaurant.name}
+            </Text>
+            <View style={styles.restaurantMeta}>
+              {restaurant.cuisine && (
+                <View style={styles.cuisineBadge}>
+                  <Icon
+                    name="silverware-fork-knife"
+                    size={14}
+                    color="#4A90E2"
+                  />
+                  <Text style={styles.cuisineText}>{restaurant.cuisine}</Text>
+                </View>
+              )}
+              {restaurant.priceRange && (
+                <View style={styles.priceRangeContainer}>
+                  <Icon name="currency-usd" size={14} color="#666666" />
+                  <Text style={styles.priceRange}>{restaurant.priceRange}</Text>
+                </View>
+              )}
             </View>
-          )}
-          {restaurant.priceRange && (
-            <View style={styles.priceRangeContainer}>
-              <Icon name="currency-usd" size={14} color="#666666" />
-              <Text style={styles.priceRange}>{restaurant.priceRange}</Text>
-            </View>
-          )}
+            <Text style={styles.restaurantDescription}>
+              {restaurant.description}
+            </Text>
+            {restaurant.website && (
+              <TouchableOpacity
+                style={styles.websiteButton}
+                onPress={() => openURL(restaurant.website)}
+              >
+                <Icon name="web" size={18} color="#4A90E2" />
+                <Text style={styles.websiteButtonText}>
+                  {STRINGS.visitWebsite}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </Card.Content>
         </View>
-        <Text style={styles.restaurantDescription}>
-          {restaurant.description}
-        </Text>
-        {restaurant.website && (
-          <TouchableOpacity
-            style={styles.websiteButton}
-            onPress={() => openURL(restaurant.website)}
-          >
-            <Icon name="web" size={18} color="#4A90E2" />
-            <Text style={styles.websiteButtonText}>{STRINGS.visitWebsite}</Text>
-          </TouchableOpacity>
-        )}
-      </Card.Content>
-    </Card>
+      </Card>
     </Animated.View>
   );
 };

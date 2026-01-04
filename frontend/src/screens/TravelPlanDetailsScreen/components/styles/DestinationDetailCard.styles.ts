@@ -7,7 +7,7 @@ export const detailCardStyles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1A1A1A",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "85%",
@@ -20,7 +20,7 @@ export const detailCardStyles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#2A2A2A",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -34,7 +34,7 @@ export const detailCardStyles = StyleSheet.create({
     height: 250,
   },
   placeholderImage: {
-    backgroundColor: "#F5E6D3",
+    backgroundColor: "#3A3A3A",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -65,7 +65,7 @@ export const detailCardStyles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333333",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   metaRow: {
@@ -74,19 +74,19 @@ export const detailCardStyles = StyleSheet.create({
   },
   metaText: {
     fontSize: 14,
-    color: "#666666",
+    color: "#FFFFFF",
     marginLeft: 6,
   },
   description: {
     fontSize: 16,
-    color: "#666666",
+    color: "#FFFFFF",
     lineHeight: 24,
     marginBottom: 20,
   },
   priceContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5E6D3",
+    backgroundColor: "#3A3A3A",
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
@@ -100,14 +100,14 @@ export const detailCardStyles = StyleSheet.create({
   coordinatesContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#3A3A3A",
     padding: 12,
     borderRadius: 12,
     marginBottom: 20,
   },
   coordinates: {
     fontSize: 14,
-    color: "#666666",
+    color: "#FFFFFF",
     marginLeft: 8,
     fontFamily: "monospace",
   },

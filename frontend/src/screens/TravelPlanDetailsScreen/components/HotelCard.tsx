@@ -27,9 +27,15 @@ export const HotelCard: React.FC<HotelCardProps> = ({
   cityName,
 }) => {
   const [imageError, setImageError] = useState(false);
-  const fadeAnimation = useRef(new Animated.Value(0)).current;
-  const scaleAnimation = useRef(new Animated.Value(0.95)).current;
-  const selectedScale = useRef(new Animated.Value(1)).current;
+  
+  // Animation refs
+  const fadeAnimationRef = useRef(new Animated.Value(0));
+  const scaleAnimationRef = useRef(new Animated.Value(0.95));
+  const selectedScaleRef = useRef(new Animated.Value(1));
+  
+  const fadeAnimation = fadeAnimationRef.current;
+  const scaleAnimation = scaleAnimationRef.current;
+  const selectedScale = selectedScaleRef.current;
 
   const isValidImage =
     hotel.imageUrl &&
@@ -43,15 +49,48 @@ export const HotelCard: React.FC<HotelCardProps> = ({
     ? hotel.imageUrl!
     : getHotelImage(hotel.name, cityName);
 
-  // Debug: Log image URLs
-  if (hotel.imageUrl && hotel.imageUrl !== "null") {
-    console.log(`Hotel "${hotel.name}" imageUrl:`, hotel.imageUrl);
-  }
+  // Fade in animation on mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnimation, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnimation, {
+        toValue: 1,
+        delay: index * 100,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }),
+    ]).start();
+  }, [index, fadeAnimation, scaleAnimation]);
+
+  // Scale animation when selected
+  useEffect(() => {
+    Animated.spring(selectedScale, {
+      toValue: isSelected ? 1.02 : 1,
+      useNativeDriver: true,
+      tension: 50,
+      friction: 7,
+    }).start();
+  }, [isSelected, selectedScale]);
 
   return (
-    <Card style={[styles.hotelCard, isSelected && styles.selectedHotelCard]}>
-      <TouchableOpacity onPress={() => onSelect(index)} activeOpacity={0.9}>
-        <View style={styles.hotelImageContainer}>
+    <Animated.View
+      style={[
+        {
+          opacity: fadeAnimation,
+          transform: [{ scale: scaleAnimation }, { scale: selectedScale }],
+        },
+      ]}
+    >
+      <Card style={[styles.hotelCard, isSelected && styles.selectedHotelCard]}>
+        <View style={styles.hotelCardWrapper}>
+          <TouchableOpacity onPress={() => onSelect(index)} activeOpacity={0.9}>
+            <View style={styles.hotelImageContainer}>
           <Image
             source={{ uri: imageError ? getDefaultHotelImage() : imageUrl }}
             style={styles.hotelImage}
@@ -59,13 +98,24 @@ export const HotelCard: React.FC<HotelCardProps> = ({
             onError={() => setImageError(true)}
             onLoadStart={() => setImageError(false)}
           />
-          <View style={styles.hotelRadioOverlay}>
-            <RadioButton
-              value={index.toString()}
-              status={isSelected ? "checked" : "unchecked"}
-              onPress={() => onSelect(index)}
-              color="#4A90E2"
-            />
+          {/* Overlay with radio and price */}
+          <View style={styles.hotelImageOverlay}>
+            <View style={styles.hotelRadioOverlay}>
+              <RadioButton
+                value={index.toString()}
+                status={isSelected ? "checked" : "unchecked"}
+                onPress={() => onSelect(index)}
+                color="#4A90E2"
+              />
+            </View>
+            {hotel.estimatedPrice && (
+              <View style={styles.hotelPriceOverlay}>
+                <Text style={styles.hotelPriceOverlayText}>
+                  {formatCurrency(hotel.estimatedPrice, currency)}
+                </Text>
+                <Text style={styles.hotelPriceOverlaySubtext}>/night</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -124,6 +174,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({
           )}
         </Card.Content>
       </TouchableOpacity>
+      </View>
     </Card>
     </Animated.View>
   );

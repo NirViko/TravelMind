@@ -4,7 +4,7 @@ export const styles = StyleSheet.create({
   button: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#2A2A2A",
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -28,7 +28,7 @@ export const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#4A90E2",
+    color: "#FFFFFF",
   },
   buttonTextActive: {
     color: "#FFFFFF",

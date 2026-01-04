@@ -28,8 +28,6 @@ const calculateRoute = async (
     // Using OSRM demo server (free, no API key needed)
     const url = `https://router.project-osrm.org/route/v1/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson`;
 
-    console.log("Fetching route from:", url);
-
     // Add timeout to fetch
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -45,13 +43,12 @@ const calculateRoute = async (
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error("Route API error:", response.status, response.statusText);
-      // Use fallback instead of returning error
+      // Silently use fallback for API errors (400, 500, etc.)
+      // Don't log as error since we have a fallback mechanism
       throw new Error("API error");
     }
 
     const data = await response.json();
-    console.log("Route API response:", data);
 
     if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
       console.error("Route calculation failed:", data);
@@ -67,12 +64,6 @@ const calculateRoute = async (
       })
     );
 
-    console.log("Route calculated successfully:", {
-      points: coordinates.length,
-      distance: route.distance,
-      duration: route.duration,
-    });
-
     return {
       route: coordinates,
       loading: false,
@@ -82,10 +73,8 @@ const calculateRoute = async (
       isFallback: false,
     };
   } catch (error: any) {
-    console.error("Error calculating route:", error);
-
-    // Always use fallback for any error (network, timeout, etc.)
-    console.warn("Using fallback route due to error:", error.message);
+    // Silently use fallback for any error (network, timeout, etc.)
+    // Don't log as error since we have a fallback mechanism
 
     const fallbackRoute = [
       { latitude: origin.latitude, longitude: origin.longitude },
@@ -105,8 +94,6 @@ const calculateRoute = async (
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     const duration = (distance / 50000) * 3600; // Assume 50 km/h average speed
-
-    console.log("Using fallback route:", { distance, duration });
 
     return {
       route: fallbackRoute,
@@ -161,13 +148,11 @@ export const useRoute = (
     const fetchRoute = async () => {
       setLoading(true);
       setError(null);
-      console.log("Calculating route from:", origin, "to:", destination);
 
       try {
         const result = await calculateRoute(origin, destination);
 
         if (!cancelled) {
-          console.log("Route result:", result);
           setRoute(result.route);
           setDistance(result.distance);
           setDuration(result.duration);
@@ -177,9 +162,32 @@ export const useRoute = (
         }
       } catch (err: any) {
         if (!cancelled) {
-          console.error("Route calculation error:", err);
-          setError(err.message || "Failed to calculate route");
+          // Silently use fallback - don't set error since we have fallback
+          setError(null);
           setLoading(false);
+          // Calculate fallback route
+          const fallbackRoute = [
+            { latitude: origin.latitude, longitude: origin.longitude },
+            { latitude: destination.latitude, longitude: destination.longitude },
+          ];
+          const R = 6371000;
+          const dLat = ((destination.latitude - origin.latitude) * Math.PI) / 180;
+          const dLon =
+            ((destination.longitude - origin.longitude) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((origin.latitude * Math.PI) / 180) *
+              Math.cos((destination.latitude * Math.PI) / 180) *
+              Math.sin(dLon / 2) *
+              Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const distance = R * c;
+          const duration = (distance / 50000) * 3600;
+
+          setRoute(fallbackRoute);
+          setDistance(distance);
+          setDuration(duration);
+          setIsFallback(true);
         }
       }
     };
@@ -187,7 +195,7 @@ export const useRoute = (
     // Add timeout to prevent infinite loading - use fallback instead
     const timeoutId = setTimeout(() => {
       if (!cancelled) {
-        console.warn("Route calculation timeout - using fallback");
+        // Silently use fallback on timeout
         // Calculate fallback route
         const fallbackRoute = [
           { latitude: origin.latitude, longitude: origin.longitude },

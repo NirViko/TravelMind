@@ -2,7 +2,6 @@ import React from "react";
 import {
   View,
   TextInput,
-  ImageBackground,
   Text,
   TouchableOpacity,
   ActivityIndicator,
@@ -59,26 +58,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   onGeneratePlan,
   onSelectFromHistory,
 }) => {
-  const backgroundImage = {
-    uri: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200",
-  };
-
   return (
     <View style={styles.backgroundContainer}>
-      <ImageBackground
-        source={backgroundImage}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay} />
-      </ImageBackground>
-
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Plan Your Perfect Trip</Text>
-          <Text style={styles.subtitle}>
-            Let AI create an unforgettable journey for you
-          </Text>
+          <Text style={styles.subtitle}>Create your dream journey with AI</Text>
         </View>
 
         <View style={styles.formCard}>
@@ -86,16 +70,17 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             <SearchHistory onSelectSearch={onSelectFromHistory} />
           ) : null}
 
-          <Text style={styles.label}>
-            <Icon name="calendar-start" size={18} color="#4A90E2" /> Start Date
-          </Text>
+          <View style={styles.labelContainer}>
+            <Icon name="calendar-start" size={18} color="#4A90E2" />
+            <Text style={styles.label}>Start Date</Text>
+          </View>
           <TouchableOpacity
             onPress={onToggleStartPicker}
             disabled={isLoading}
             style={styles.dateInput}
           >
             <Text style={styles.dateText}>{formatDate(startDate)}</Text>
-            <Icon name="calendar" size={24} color="#4A90E2" />
+            <Icon name="calendar" size={22} color="#CCCCCC" />
           </TouchableOpacity>
           {showStartDatePicker && (
             <>
@@ -117,16 +102,17 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             </>
           )}
 
-          <Text style={styles.label}>
-            <Icon name="calendar-end" size={18} color="#4A90E2" /> End Date
-          </Text>
+          <View style={styles.labelContainer}>
+            <Icon name="calendar-end" size={18} color="#4A90E2" />
+            <Text style={styles.label}>End Date</Text>
+          </View>
           <TouchableOpacity
             onPress={onToggleEndPicker}
             disabled={isLoading}
             style={styles.dateInput}
           >
             <Text style={styles.dateText}>{formatDate(endDate)}</Text>
-            <Icon name="calendar" size={24} color="#4A90E2" />
+            <Icon name="calendar" size={22} color="#CCCCCC" />
           </TouchableOpacity>
           {showEndDatePicker && (
             <>
@@ -148,9 +134,10 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             </>
           )}
 
-          <Text style={styles.label}>
-            <Icon name="map-marker" size={18} color="#4A90E2" /> Destination
-          </Text>
+          <View style={styles.labelContainer}>
+            <Icon name="map-marker" size={18} color="#4A90E2" />
+            <Text style={styles.label}>Destination</Text>
+          </View>
           <TextInput
             style={styles.input}
             placeholder="Where do you want to go? (e.g., Paris, France)"
@@ -160,9 +147,10 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             editable={!isLoading}
           />
 
-          <Text style={styles.label}>
-            <Icon name="wallet" size={18} color="#4A90E2" /> Budget
-          </Text>
+          <View style={styles.labelContainer}>
+            <Icon name="wallet" size={18} color="#4A90E2" />
+            <Text style={styles.label}>Budget</Text>
+          </View>
           <TextInput
             style={styles.input}
             placeholder={`Budget (${
@@ -188,7 +176,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             loading={isLoading}
             contentStyle={{ paddingVertical: 8 }}
             labelStyle={styles.buttonText}
-            icon={() => <Icon name="magnify" size={20} color="#FFFFFF" />}
+            icon={() => <Icon name="magnify" size={22} color="#FFFFFF" />}
           >
             {isLoading ? "Creating Your Plan..." : "Generate Travel Plan"}
           </Button>

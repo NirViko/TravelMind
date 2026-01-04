@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { useAuthStore } from "../store/authStore";
 
 // You can override the API URL by setting this environment variable
 // For physical devices, set your computer's local IP address
@@ -9,7 +10,6 @@ const CUSTOM_API_URL = process.env.EXPO_PUBLIC_API_URL;
 const getApiBaseUrl = (): string => {
   // Allow custom override via environment variable
   if (CUSTOM_API_URL) {
-    console.log("Using custom API URL:", CUSTOM_API_URL);
     return CUSTOM_API_URL;
   }
 
@@ -20,41 +20,48 @@ const getApiBaseUrl = (): string => {
   // For development, use platform-specific URLs
   if (Platform.OS === "android") {
     // Android emulator uses 10.0.2.2 to access host machine's localhost
-    const url = "http://10.0.2.2:3000/api";
-    console.log("Using Android API URL:", url);
-    return url;
+    return "http://10.0.2.2:3000/api";
   } else if (Platform.OS === "ios") {
     // iOS simulator - use localhost, but if it doesn't work,
     // set EXPO_PUBLIC_API_URL to your local IP (e.g., http://192.168.0.105:3000/api)
     // You can find your IP with: ifconfig | grep "inet " | grep -v 127.0.0.1
-    const url = CUSTOM_API_URL || "http://localhost:3000/api";
-    console.log("Using iOS API URL:", url);
-    console.log(
-      "💡 Tip: If connection fails, set EXPO_PUBLIC_API_URL in .env file"
-    );
-    return url;
+    return CUSTOM_API_URL || "http://localhost:3000/api";
   } else {
     // Web or other platforms
-    const url = "http://localhost:3000/api";
-    console.log("Using Web API URL:", url);
-    return url;
+    return "http://localhost:3000/api";
   }
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Helper to get auth token
+const getAuthToken = (): string | null => {
+  const state = useAuthStore.getState();
+  return state.sessionToken;
+};
+
 export const apiClient = {
   baseURL: API_BASE_URL,
 
-  async get<T>(endpoint: string): Promise<T> {
+  async get<T>(endpoint: string, timeout: number = 30000): Promise<T> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const token = getAuthToken();
+
     try {
-      console.log(`[API] GET ${API_BASE_URL}${endpoint}`);
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
@@ -64,10 +71,17 @@ export const apiClient = {
       }
       return response.json();
     } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error(
+          `Request timeout: The server took too long to respond. Please try again.`
+        );
+      }
       if (
         error.message.includes("Network request failed") ||
         error.message.includes("Failed to fetch") ||
-        error.message.includes("NetworkError")
+        error.message.includes("NetworkError") ||
+        error.message.includes("Network request timed out")
       ) {
         const baseUrl = API_BASE_URL.replace("/api", "");
         const platform = Platform.OS;
@@ -92,16 +106,30 @@ export const apiClient = {
     }
   },
 
-  async post<T>(endpoint: string, data: any): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    data: any,
+    timeout: number = 120000
+  ): Promise<T> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const token = getAuthToken();
+
     try {
-      console.log(`[API] POST ${API_BASE_URL}${endpoint}`);
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(data),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
@@ -111,10 +139,17 @@ export const apiClient = {
       }
       return response.json();
     } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error(
+          `Request timeout: The server took too long to respond. This might happen when generating complex travel plans. Please try again with a simpler request.`
+        );
+      }
       if (
         error.message.includes("Network request failed") ||
         error.message.includes("Failed to fetch") ||
-        error.message.includes("NetworkError")
+        error.message.includes("NetworkError") ||
+        error.message.includes("Network request timed out")
       ) {
         const baseUrl = API_BASE_URL.replace("/api", "");
         const platform = Platform.OS;
