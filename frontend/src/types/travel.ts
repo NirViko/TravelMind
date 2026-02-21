@@ -3,7 +3,7 @@ export interface TravelPlanRequest {
   startDate: string;
   endDate: string;
   destination: string;
-  budget: number;
+  budget?: number; // Optional budget
 }
 
 export interface Location {
@@ -52,7 +52,7 @@ export interface TravelPlan {
   startDate: string;
   endDate: string;
   totalDays: number;
-  budget: number;
+  budget?: number; // Optional budget
   estimatedTotalCost: number;
   currency?: string;
   itinerary: Destination[];

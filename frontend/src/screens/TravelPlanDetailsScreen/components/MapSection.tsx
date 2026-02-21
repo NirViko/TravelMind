@@ -53,7 +53,7 @@ export const MapSection: React.FC<MapSectionProps> = ({
       : null
   );
 
-  const mapHeight = isExpanded ? 800 : 250;
+  const mapHeight = isExpanded ? 900 : 250;
 
   return (
     <View style={[styles.mapContainer, { height: mapHeight }]}>

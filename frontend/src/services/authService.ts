@@ -7,6 +7,7 @@ interface AuthResult {
   error?: string;
   session?: any;
   needsEmailConfirmation?: boolean;
+  needsEmailVerification?: boolean;
 }
 
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
         user?: User;
         error?: string;
         session?: any;
+        needsEmailVerification?: boolean;
       }>("/auth/login", {
         email,
         password,
@@ -35,9 +37,12 @@ export class AuthService {
           session: response.session,
         };
       } else {
+        // Check if email verification is needed
+        const needsVerification = (response as any).needsEmailVerification || false;
         return {
           success: false,
           error: response.error || "Invalid credentials",
+          needsEmailVerification: needsVerification,
         };
       }
     } catch (error: any) {
@@ -123,8 +128,9 @@ export class AuthService {
 
   /**
    * Resend verification email
+   * @param email Optional email address. If not provided, uses token from store
    */
-  static async resendVerificationEmail(): Promise<{
+  static async resendVerificationEmail(email?: string): Promise<{
     success: boolean;
     error?: string;
   }> {
@@ -132,7 +138,7 @@ export class AuthService {
       const response = await apiClient.post<{
         success: boolean;
         error?: string;
-      }>("/auth/resend-verification");
+      }>("/auth/resend-verification", email ? { email } : {});
 
       return {
         success: response.success || false,
@@ -142,6 +148,62 @@ export class AuthService {
       return {
         success: false,
         error: error.message || "Failed to resend verification email",
+      };
+    }
+  }
+
+  /**
+   * Send password reset email
+   */
+  static async sendPasswordResetEmail(email: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.post<{
+        success: boolean;
+        error?: string;
+      }>("/auth/forgot-password", { email });
+
+      return {
+        success: response.success || false,
+        error: response.error,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || "Failed to send password reset email",
+      };
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  static async resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.post<{
+        success: boolean;
+        error?: string;
+      }>("/auth/reset-password", {
+        token,
+        password: newPassword,
+      });
+
+      return {
+        success: response.success || false,
+        error: response.error,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || "Failed to reset password",
       };
     }
   }

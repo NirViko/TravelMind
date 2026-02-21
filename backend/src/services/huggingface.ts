@@ -29,6 +29,26 @@ export interface HuggingFaceRequest {
   temperature?: number;
 }
 
+interface ChatCompletionResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+  generated_text?: string;
+}
+
+interface TextGenerationResponse {
+  generated_text?: string;
+}
+
+type HuggingFaceResponse = ChatCompletionResponse | ChatCompletionResponse[] | TextGenerationResponse | TextGenerationResponse[];
+
 export class HuggingFaceService {
   /**
    * Generate text completion using Hugging Face Inference API
@@ -134,22 +154,22 @@ export class HuggingFaceService {
       throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as HuggingFaceResponse;
     
     // Handle chat completion response format
-    if (data.choices && data.choices[0]?.message?.content) {
+    if (!Array.isArray(data) && 'choices' in data && data.choices && data.choices[0]?.message?.content) {
       return {
         success: true,
         content: data.choices[0].message.content,
-        usage: data.usage,
+        usage: 'usage' in data ? data.usage : undefined,
       };
-    } else if (data.generated_text) {
+    } else if (!Array.isArray(data) && 'generated_text' in data && data.generated_text) {
       // Fallback for text generation format
       return {
         success: true,
         content: data.generated_text,
       };
-    } else if (Array.isArray(data) && data[0]?.generated_text) {
+    } else if (Array.isArray(data) && data[0] && 'generated_text' in data[0] && data[0].generated_text) {
       return {
         success: true,
         content: data[0].generated_text,
@@ -253,15 +273,15 @@ export class HuggingFaceService {
       throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as TextGenerationResponse | TextGenerationResponse[];
     
     // Handle different response formats
-    if (data.generated_text) {
+    if (!Array.isArray(data) && data.generated_text) {
       return {
         success: true,
         content: data.generated_text,
       };
-    } else if (Array.isArray(data) && data[0]?.generated_text) {
+    } else if (Array.isArray(data) && data[0] && 'generated_text' in data[0] && data[0].generated_text) {
       return {
         success: true,
         content: data[0].generated_text,

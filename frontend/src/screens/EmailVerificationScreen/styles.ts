@@ -51,7 +51,7 @@ export const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: "100%",
-    gap: 16,
+    marginBottom: 24,
   },
   button: {
     flexDirection: "row",
@@ -83,18 +83,14 @@ export const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#4A90E2",
   },
-  helpContainer: {
-    flexDirection: "row",
+  resendLink: {
+    paddingVertical: 12,
     alignItems: "center",
-    marginTop: 32,
-    paddingHorizontal: 20,
-    gap: 8,
   },
-  helpText: {
-    fontSize: 12,
-    color: "#999999",
-    flex: 1,
-    lineHeight: 16,
+  resendLinkText: {
+    fontSize: 14,
+    color: "#4A90E2",
+    fontWeight: "500",
   },
 });
 

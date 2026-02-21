@@ -87,6 +87,12 @@ router.post("/signup", async (req: Request, res: Response) => {
           "This email is already registered. Please sign in instead.";
       } else if (authError.message.includes("invalid")) {
         errorMessage = "Please enter a valid email address.";
+      } else if (
+        authError.message.includes("confirmation email") ||
+        authError.message.includes("Error sending")
+      ) {
+        errorMessage =
+          "Failed to send confirmation email. Please check SMTP settings in Supabase Dashboard → Settings → Auth → SMTP Settings, or disable email confirmations temporarily for development.";
       }
       return res.status(400).json({
         success: false,
@@ -224,6 +230,18 @@ router.post("/login", async (req: Request, res: Response) => {
       });
     }
 
+    // Check if email is verified - BLOCK login if not verified
+    const isEmailVerified = authData.user.email_confirmed_at !== null;
+
+    if (!isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        error:
+          "Please verify your email address before logging in. Check your inbox for the verification email.",
+        needsEmailVerification: true,
+      });
+    }
+
     // Get user profile
     const { data: profile } = await supabaseAdmin
       .from("profiles")
@@ -240,7 +258,7 @@ router.post("/login", async (req: Request, res: Response) => {
         firstName: profile?.firstName,
         lastName: profile?.lastName,
         dateOfBirth: profile?.dateOfBirth,
-        emailVerified: authData.user.email_confirmed_at !== null,
+        emailVerified: true, // We know it's verified because we checked above
       },
       session: authData.session,
     });
@@ -324,30 +342,46 @@ router.get("/verify-status", async (req: Request, res: Response) => {
 /**
  * POST /api/auth/resend-verification
  * Resend verification email to the current user
+ * Can use either token (from header) or email (from body)
  */
 router.post("/resend-verification", async (req: Request, res: Response) => {
   try {
-    // Get authorization token from header
+    const { email } = req.body;
+
+    // Get authorization token from header (optional)
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        error: "Authorization token required",
-      });
+    let user = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      // Method 1: Use token if provided
+      const token = authHeader.split(" ")[1];
+      const {
+        data: { user: tokenUser },
+        error: userError,
+      } = await supabaseAdmin.auth.getUser(token);
+
+      if (!userError && tokenUser) {
+        user = tokenUser;
+      }
     }
 
-    const token = authHeader.split(" ")[1];
+    // Method 2: Use email from body if no token or token failed
+    if (!user && email) {
+      // Find user by email
+      const { data: users, error: findError } =
+        await supabaseAdmin.auth.admin.listUsers();
 
-    // Verify token and get user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(token);
+      if (!findError && users) {
+        user = users.users.find((u) => u.email === email.toLowerCase().trim());
+      }
+    }
 
-    if (userError || !user) {
-      return res.status(401).json({
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        error: "Invalid token",
+        error: email
+          ? "No account found with this email address"
+          : "Authorization token or email required",
       });
     }
 
@@ -383,6 +417,135 @@ router.post("/resend-verification", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: error.message || "Failed to resend verification email",
+    });
+  }
+});
+
+/**
+ * POST /api/auth/forgot-password
+ * Send password reset email
+ */
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "Email is required",
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        error: "Please enter a valid email address",
+      });
+    }
+
+    // Send password reset email using Supabase
+    // Note: Supabase will send an email with a reset link
+    // The link will contain a token that can be used to reset the password
+    const { data, error: resetError } =
+      await supabaseAdmin.auth.resetPasswordForEmail(
+        email.toLowerCase().trim(),
+        {
+          redirectTo: `${
+            process.env.FRONTEND_URL || "travelmind://reset-password"
+          }`,
+        }
+      );
+
+    if (resetError) {
+      console.error("Password reset error:", resetError);
+      // Don't reveal if email exists or not for security
+      // Always return success to prevent email enumeration
+      return res.json({
+        success: true,
+        message:
+          "If an account exists with this email, a password reset link has been sent.",
+      });
+    }
+
+    res.json({
+      success: true,
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
+    });
+  } catch (error: any) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to send password reset email",
+    });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password with recovery token (from email link)
+ * In Supabase, the recovery token is passed in the URL hash when user clicks the email link
+ */
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Token and password are required",
+      });
+    }
+
+    // Password validation
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 8 characters",
+      });
+    }
+
+    // In Supabase, password reset uses updateUser with the recovery token
+    // The token from the email link needs to be used with updateUser
+    // First, verify the token and get the user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      return res.status(401).json({
+        success: false,
+        error:
+          "Invalid or expired reset token. Please request a new password reset.",
+      });
+    }
+
+    // Update password using Supabase Admin API
+    // Note: For password reset, we use the recovery token session
+    // The token from the email is a recovery token, not a regular access token
+    const { error: updateError } =
+      await supabaseAdmin.auth.admin.updateUserById(user.id, { password });
+
+    if (updateError) {
+      console.error("Password update error:", updateError);
+      return res.status(400).json({
+        success: false,
+        error: updateError.message || "Failed to reset password",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+  } catch (error: any) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to reset password",
     });
   }
 });

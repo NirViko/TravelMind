@@ -20,6 +20,8 @@ import {
   validateName,
   validateDateOfBirth,
 } from "../../utils/validation";
+import { EmailVerificationScreen } from "../EmailVerificationScreen";
+import { ForgotPasswordScreen } from "../ForgotPasswordScreen";
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -47,7 +49,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   }>({});
   const [needsVerification, setNeedsVerification] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const { login } = useAuthStore();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const { login, setAuthError, clearError } = useAuthStore();
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -81,7 +84,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       return;
     }
 
+    // Clear any previous errors
+    clearError();
     setIsLoading(true);
+
     try {
       const result = isSignUp
         ? await AuthService.signUpWithEmail(
@@ -95,13 +101,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         : await AuthService.loginWithEmail(email, password);
 
       if (result.success && result.user) {
-        // Check if email confirmation is needed
-        const response = result as any;
-        const sessionToken = response.session?.access_token || null;
+        // Check if email confirmation is needed (for signup)
+        const sessionToken = result.session?.access_token || null;
+        const needsEmailConfirmation = result.needsEmailConfirmation || false;
 
         if (
           isSignUp &&
-          (response.needsEmailConfirmation || !result.user.emailVerified)
+          (needsEmailConfirmation || !result.user.emailVerified)
         ) {
           // Save session token for verification checks
           if (sessionToken) {
@@ -110,21 +116,44 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           // Show email verification screen
           setUserEmail(result.user.email);
           setNeedsVerification(true);
+          setIsLoading(false);
+          return; // Don't proceed with login
         } else {
+          // Step 2 & 3: Store token and update state
           await login(result.user, sessionToken);
+          // Step 2 & 3: Redirect to Search screen (handled by App.tsx)
           onLogin();
         }
       } else {
+        // Step 2 & 3: Handle errors
+        // Check if email verification is needed (for login)
+        const needsEmailVerification = result.needsEmailVerification || false;
+        
+        if (needsEmailVerification && !isSignUp) {
+          // User tried to login but email is not verified
+          // Show email verification screen with the email from the form
+          setUserEmail(email);
+          setNeedsVerification(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        const errorMessage = result.error ||
+          (isSignUp ? "Failed to create account. Please try again." : "Invalid email or password. Please check your credentials.");
+        setAuthError(errorMessage);
         Alert.alert(
           isSignUp ? "Sign Up Failed" : "Login Failed",
-          result.error ||
-            (isSignUp ? "Failed to create account" : "Invalid credentials")
+          errorMessage
         );
       }
     } catch (error: any) {
+      // Step 2 & 3: Handle server errors
+      const errorMessage = error.message || 
+        (isSignUp ? "Failed to sign up. Please check your connection and try again." : "Failed to login. Please check your connection and try again.");
+      setAuthError(errorMessage);
       Alert.alert(
         "Error",
-        error.message || (isSignUp ? "Failed to sign up" : "Failed to login")
+        errorMessage
       );
     } finally {
       setIsLoading(false);
@@ -143,28 +172,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   };
 
+  // Show forgot password screen
+  if (showForgotPassword) {
+    return (
+      <ForgotPasswordScreen
+        onBack={() => setShowForgotPassword(false)}
+        onSuccess={() => setShowForgotPassword(false)}
+      />
+    );
+  }
+
   // Show email verification screen if needed
   if (needsVerification) {
     return (
       <EmailVerificationScreen
         email={userEmail}
-        onVerified={async () => {
-          // Re-check user status and login
-          const checkResult = await AuthService.checkEmailVerification();
-          if (checkResult.verified) {
-            // Get user info again
-            const loginResult = await AuthService.loginWithEmail(
-              email,
-              password
-            );
-            if (loginResult.success && loginResult.user) {
-              const response = loginResult as any;
-              const sessionToken = response.session?.access_token || null;
-              await login(loginResult.user, sessionToken);
-              setNeedsVerification(false);
-              onLogin();
-            }
-          }
+        onGoToLogin={() => {
+          // Reset form and go back to login screen
+          setNeedsVerification(false);
+          setEmail("");
+          setPassword("");
+          setIsSignUp(false);
+        }}
+        onVerified={() => {
+          // Fallback - should not be called
+          setNeedsVerification(false);
+          setIsSignUp(false);
         }}
         onResend={() => {
           // Optionally handle resend callback
@@ -367,7 +400,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </View>
 
             {!isSignUp && (
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowForgotPassword(true)}>
                 <Text style={styles.linkText}>Forgot Password?</Text>
               </TouchableOpacity>
             )}

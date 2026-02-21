@@ -14,11 +14,10 @@ router.post("/plan", async (req: Request, res: Response) => {
       req.body;
 
     // Validation
-    if (!startDate || !endDate || !destination || !budget) {
+    if (!startDate || !endDate || !destination) {
       return res.status(400).json({
         success: false,
-        error:
-          "Missing required fields: startDate, endDate, destination, budget",
+        error: "Missing required fields: startDate, endDate, destination",
       });
     }
 
@@ -29,10 +28,11 @@ router.post("/plan", async (req: Request, res: Response) => {
       });
     }
 
-    if (budget <= 0) {
+    // Budget is optional, but if provided, must be positive
+    if (budget !== undefined && budget !== null && budget <= 0) {
       return res.status(400).json({
         success: false,
-        error: "Budget must be greater than 0",
+        error: "Budget must be greater than 0 if provided",
       });
     }
 
@@ -40,11 +40,15 @@ router.post("/plan", async (req: Request, res: Response) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const totalDays = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     // Create prompt for AI
-    const prompt = `You are a travel planning expert. Create a detailed travel itinerary for ${destination} from ${startDate} to ${endDate} (${totalDays} days) with a budget of $${budget} USD.
+    const budgetText =
+      budget !== undefined && budget !== null
+        ? `with a budget of $${budget} USD`
+        : "without a specific budget constraint (focus on quality experiences and provide realistic price estimates)";
+    const prompt = `You are a travel planning expert. Create a detailed travel itinerary for ${destination} from ${startDate} to ${endDate} (${totalDays} days) ${budgetText}.
 
 CRITICAL REQUIREMENTS - READ CAREFULLY:
 - You MUST use ONLY REAL, EXISTING places that actually exist in ${destination}
@@ -77,9 +81,15 @@ Requirements:
    - Description (2-3 sentences about the hotel - describe what actually exists at this verified hotel)
    - Coordinates (REAL and ACCURATE latitude and longitude of the actual hotel location - only if you verified the hotel exists)
    - Booking links (CRITICAL: Use REAL, FUNCTIONAL booking URLs from sites like "https://www.booking.com/hotel/...", "https://www.expedia.com/...", "https://www.agoda.com/...", "https://www.hotels.com/..." for the specific hotel. These links MUST lead directly to the booking page where users can actually purchase a stay. If you cannot find a real, functional link for a verified hotel, use "N/A". Do NOT generate fake or generic booking links. If you cannot verify the hotel exists, do NOT include it at all)
-   - Estimated price per night in local currency (realistic for the destination and budget - only for verified hotels)
+   - Estimated price per night in local currency (realistic for the destination${
+     budget !== undefined && budget !== null ? ` and budget of $${budget}` : ""
+   } - only for verified hotels)
 4. Determine the local currency based on the destination (e.g., EUR for Europe, GBP for UK, JPY for Japan, USD for US, etc.)
-5. Calculate estimated total cost for the trip in local currency (should be close to but under the budget)
+5. ${
+      budget !== undefined && budget !== null
+        ? `Calculate estimated total cost for the trip in local currency (should be close to but under the budget of $${budget})`
+        : "Provide estimated total cost for the trip in local currency based on realistic prices for activities, hotels, and restaurants"
+    }
 6. Include 5-8 restaurant recommendations in the area with:
    - Restaurant name (REAL restaurant names that ACTUALLY EXIST in ${destination}. Use actual restaurant names from Google Maps, TripAdvisor, or similar. Do NOT invent restaurant names)
    - Description (2-3 sentences about the cuisine and atmosphere - describe what actually exists)
@@ -97,7 +107,7 @@ Return the response as a valid JSON object with this EXACT structure (no markdow
   "startDate": "${startDate}",
   "endDate": "${endDate}",
   "totalDays": ${totalDays},
-  "budget": ${budget},
+  ${budget !== undefined && budget !== null ? `"budget": ${budget},` : ""}
   "estimatedTotalCost": <number>,
   "currency": "<currency code like USD, EUR, GBP, JPY, etc.>",
   "itinerary": [
@@ -214,12 +224,12 @@ Return ONLY valid JSON, no additional text.`;
           {
             maxTokens: 4000,
             temperature: 0.1, // Very low temperature for maximum accuracy and minimal creativity
-          }
+          },
         );
       } catch (groqError: any) {
         console.warn(
           "Groq API not available, falling back to Hugging Face:",
-          groqError.message
+          groqError.message,
         );
       }
     }
@@ -232,7 +242,7 @@ Return ONLY valid JSON, no additional text.`;
         {
           max_tokens: 4000,
           temperature: 0.1, // Very low temperature for maximum accuracy
-        }
+        },
       );
     }
 
@@ -272,7 +282,7 @@ Return ONLY valid JSON, no additional text.`;
               return `"longitude": ${padded}`;
             }
             return match;
-          }
+          },
         );
 
         jsonString = jsonString.replace(
@@ -284,7 +294,7 @@ Return ONLY valid JSON, no additional text.`;
               return `"latitude": ${padded}`;
             }
             return match;
-          }
+          },
         );
 
         // Try to close incomplete arrays/objects
@@ -308,18 +318,18 @@ Return ONLY valid JSON, no additional text.`;
           // Last resort: try to extract what we can by finding the last complete restaurant object
           console.error(
             "JSON parsing failed after fixes:",
-            secondError.message
+            secondError.message,
           );
 
           // Try to extract up to the last complete restaurant
           const restaurantsMatch = jsonString.match(
-            /"restaurants":\s*\[([\s\S]*?)\]/
+            /"restaurants":\s*\[([\s\S]*?)\]/,
           );
           if (restaurantsMatch) {
             // Remove incomplete restaurants array and try again
             const beforeRestaurants = jsonString.substring(
               0,
-              jsonString.indexOf('"restaurants"')
+              jsonString.indexOf('"restaurants"'),
             );
             const fixedJson = beforeRestaurants + '"restaurants": []}';
             try {
@@ -330,8 +340,8 @@ Return ONLY valid JSON, no additional text.`;
                 `Failed to parse AI response. The response may be incomplete. ` +
                   `Error: ${secondError.message}. ` +
                   `Response preview: ${jsonString.substring(
-                    Math.max(0, jsonString.length - 500)
-                  )}`
+                    Math.max(0, jsonString.length - 500),
+                  )}`,
               );
             }
           } else {
@@ -339,8 +349,8 @@ Return ONLY valid JSON, no additional text.`;
               `Failed to parse AI response. The response may be incomplete. ` +
                 `Error: ${secondError.message}. ` +
                 `Response preview: ${jsonString.substring(
-                  Math.max(0, jsonString.length - 500)
-                )}`
+                  Math.max(0, jsonString.length - 500),
+                )}`,
             );
           }
         }
@@ -366,7 +376,7 @@ Return ONLY valid JSON, no additional text.`;
                 travelPlan.itinerary.map((dest: any) => ({
                   name: dest.title,
                   coordinates: dest.coordinates,
-                }))
+                })),
               );
 
             let photosFound = 0;
@@ -386,7 +396,7 @@ Return ONLY valid JSON, no additional text.`;
               travelPlan.hotels.map((hotel: any) => ({
                 name: hotel.name,
                 coordinates: hotel.coordinates,
-              }))
+              })),
             );
 
             let photosFound = 0;
@@ -407,7 +417,7 @@ Return ONLY valid JSON, no additional text.`;
                 travelPlan.restaurants.map((rest: any) => ({
                   name: rest.name,
                   coordinates: rest.coordinates,
-                }))
+                })),
               );
 
             let photosFound = 0;
@@ -423,7 +433,7 @@ Return ONLY valid JSON, no additional text.`;
         } catch (photoError: any) {
           console.warn(
             "⚠️  Error fetching photos from Google Places API, trying Unsplash:",
-            photoError.message
+            photoError.message,
           );
           // Fallback to Unsplash
           await addUnsplashPhotos(travelPlan, destination);
@@ -470,7 +480,7 @@ Return ONLY valid JSON, no additional text.`;
           const lng = dest.coordinates.longitude;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             console.warn(
-              `Out of range coordinates for destination: ${dest.title} (${lat}, ${lng})`
+              `Out of range coordinates for destination: ${dest.title} (${lat}, ${lng})`,
             );
             return false;
           }
@@ -493,7 +503,7 @@ Return ONLY valid JSON, no additional text.`;
           const lng = rest.coordinates.longitude;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             console.warn(
-              `Out of range coordinates for restaurant: ${rest.name} (${lat}, ${lng})`
+              `Out of range coordinates for restaurant: ${rest.name} (${lat}, ${lng})`,
             );
             return false;
           }
@@ -522,7 +532,7 @@ Return ONLY valid JSON, no additional text.`;
           // If all booking links are N/A, filter out the hotel (likely fictional)
           if (allLinksNA) {
             console.warn(
-              `Filtering out hotel "${hotel.name}" - no booking links available (likely unverified/fictional)`
+              `Filtering out hotel "${hotel.name}" - no booking links available (likely unverified/fictional)`,
             );
             return false;
           }
@@ -542,14 +552,14 @@ Return ONLY valid JSON, no additional text.`;
           ];
 
           const hasChainName = commonChains.some((chain) =>
-            hotelName.includes(chain)
+            hotelName.includes(chain),
           );
           const hasCityName = hotelName.includes(destinationLower);
 
           // If hotel has both chain name and city name but no booking links, it's suspicious
           if (hasChainName && hasCityName && allLinksNA) {
             console.warn(
-              `Filtering out suspicious hotel "${hotel.name}" - appears to be fictional (chain + city name but no booking links)`
+              `Filtering out suspicious hotel "${hotel.name}" - appears to be fictional (chain + city name but no booking links)`,
             );
             return false;
           }
@@ -567,7 +577,7 @@ Return ONLY valid JSON, no additional text.`;
             const lng = hotel.coordinates.longitude;
             if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
               console.warn(
-                `Out of range coordinates for hotel: ${hotel.name} (${lat}, ${lng})`
+                `Out of range coordinates for hotel: ${hotel.name} (${lat}, ${lng})`,
               );
               return false;
             }
@@ -581,7 +591,7 @@ Return ONLY valid JSON, no additional text.`;
       console.error("Parse error:", parseError);
       throw new Error(
         `AI returned invalid JSON: ${parseError.message}. ` +
-          `Response preview: ${content.substring(0, 300)}`
+          `Response preview: ${content.substring(0, 300)}`,
       );
     }
 
@@ -613,7 +623,7 @@ async function addUnsplashPhotos(travelPlan: any, destination: string) {
           name: dest.title,
           location: destination,
           type: "destination" as const,
-        }))
+        })),
       );
 
       travelPlan.itinerary = travelPlan.itinerary.map((dest: any) => {
@@ -632,7 +642,7 @@ async function addUnsplashPhotos(travelPlan: any, destination: string) {
           name: hotel.name,
           location: destination,
           type: "hotel" as const,
-        }))
+        })),
       );
 
       travelPlan.hotels = travelPlan.hotels.map((hotel: any) => {
@@ -651,7 +661,7 @@ async function addUnsplashPhotos(travelPlan: any, destination: string) {
           name: rest.name,
           location: destination,
           type: "restaurant" as const,
-        }))
+        })),
       );
 
       travelPlan.restaurants = travelPlan.restaurants.map((rest: any) => {

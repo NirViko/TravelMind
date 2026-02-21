@@ -47,15 +47,30 @@ export const validateDateOfBirth = (dateOfBirth: string): string | null => {
   if (!dateOfBirth) {
     return "Date of birth is required";
   }
+  
   const date = new Date(dateOfBirth);
   const today = new Date();
-  const age = today.getFullYear() - date.getFullYear();
-  const monthDiff = today.getMonth() - date.getMonth();
   
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
-    return "Invalid date of birth";
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return "Please enter a valid date";
   }
   
+  // Check if date is in the future
+  if (date > today) {
+    return "Date of birth cannot be in the future";
+  }
+  
+  // Calculate age correctly
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDiff = today.getMonth() - date.getMonth();
+  
+  // Adjust age if birthday hasn't occurred yet this year
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+    age--;
+  }
+  
+  // Check age constraints
   if (age < 13) {
     return "You must be at least 13 years old";
   }

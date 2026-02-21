@@ -12,13 +12,38 @@ import { TravelPlanDetailsScreen } from "../TravelPlanDetailsScreen";
 import { SearchForm } from "./components";
 import { useTravelPlanForm } from "../TravelPlanScreen/hooks/useTravelPlanForm";
 import { useDateFormatter } from "../../hooks/useDateFormatter";
+import { useAuthStore } from "../../store/authStore";
 import { styles } from "./styles";
 
 interface HomeScreenProps {
-  onBack?: () => void;
+  onLogout?: () => void;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onBack }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
+  const { logout, isAuthenticated } = useAuthStore();
+
+  // Step 6: Route Protection - This screen should only be accessible to authenticated users
+  // If somehow accessed without auth, App.tsx will handle the redirect
+  // But we add this check as an extra safety measure
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      // This should not happen as App.tsx protects the route
+      // But if it does, we ensure logout is called
+      logout();
+    }
+  }, [isAuthenticated, logout]);
+
+  const handleLogout = async () => {
+    try {
+      // Step 5: Remove token and reset state
+      await logout();
+      // Step 5: Redirect handled by App.tsx based on isAuthenticated state
+      // No need to call onLogout callback as App.tsx will detect the state change
+    } catch (error) {
+      console.error("Error logging out:", error);
+      // Could show an alert here if needed
+    }
+  };
   const {
     startDate,
     endDate,
@@ -26,6 +51,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBack }) => {
     showEndDatePicker,
     destination,
     budget,
+    currency,
     travelPlan,
     error,
     isLoading,
@@ -33,6 +59,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBack }) => {
     setShowEndDatePicker,
     setDestination,
     setBudget,
+    setCurrency,
     setTravelPlan,
     setStartDate,
     setEndDate,
@@ -87,17 +114,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBack }) => {
           },
         ]}
       >
-        {onBack && (
-          <TouchableOpacity
-            onPress={onBack}
-            activeOpacity={0.7}
-            style={styles.backButton}
-          >
-            <Icon name="arrow-left" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
+        <View style={styles.backButtonPlaceholder} />
         <Text style={styles.headerTitle}>Plan Your Perfect Trip</Text>
-        {onBack && <View style={styles.backButtonPlaceholder} />}
+        <TouchableOpacity
+          onPress={handleLogout}
+          activeOpacity={0.7}
+          style={styles.logoutButton}
+        >
+          <Icon name="logout" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
       </Animated.View>
       <Animated.ScrollView
         style={styles.scrollView}
@@ -116,6 +141,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBack }) => {
           showEndDatePicker={showEndDatePicker}
           destination={destination}
           budget={budget}
+          currency={currency}
           error={error}
           isLoading={isLoading}
           formatDate={formatDateForDisplay}
@@ -127,6 +153,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onBack }) => {
           onToggleEndPicker={() => setShowEndDatePicker(!showEndDatePicker)}
           onDestinationChange={setDestination}
           onBudgetChange={setBudget}
+          onCurrencyChange={setCurrency}
           onGeneratePlan={handleGeneratePlan}
           onSelectFromHistory={handleSelectFromHistory}
         />

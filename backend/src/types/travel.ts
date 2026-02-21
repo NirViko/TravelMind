@@ -3,7 +3,7 @@ export interface TravelPlanRequest {
   startDate: string; // ISO date string
   endDate: string; // ISO date string
   destination: string; // e.g., "Paris, France"
-  budget: number; // Budget in USD
+  budget?: number; // Optional budget in USD
 }
 
 export interface Location {
@@ -50,7 +50,7 @@ export interface TravelPlan {
   startDate: string;
   endDate: string;
   totalDays: number;
-  budget: number;
+  budget?: number; // Optional budget
   estimatedTotalCost: number;
   currency?: string; // Currency code (USD, EUR, etc.)
   itinerary: Destination[];

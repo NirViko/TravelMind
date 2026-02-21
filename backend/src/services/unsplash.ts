@@ -5,6 +5,14 @@
 
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
+interface UnsplashSearchResponse {
+  results?: Array<{
+    urls?: {
+      regular?: string;
+    };
+  }>;
+}
+
 export class UnsplashService {
   /**
    * Search for photos on Unsplash
@@ -27,9 +35,9 @@ export class UnsplashService {
       )}&orientation=${orientation}&per_page=1&client_id=${UNSPLASH_ACCESS_KEY}`;
 
       const response = await fetch(url);
-      const data = await response.json();
+      const data = await response.json() as UnsplashSearchResponse;
 
-      if (data.results && data.results.length > 0) {
+      if (data.results && data.results.length > 0 && data.results[0].urls?.regular) {
         return data.results[0].urls.regular;
       }
 

@@ -21,6 +21,7 @@ interface SearchFormProps {
   showEndDatePicker: boolean;
   destination: string;
   budget: string;
+  currency: string;
   error: string | null;
   isLoading: boolean;
   formatDate: (date: Date) => string;
@@ -30,6 +31,7 @@ interface SearchFormProps {
   onToggleEndPicker: () => void;
   onDestinationChange: (value: string) => void;
   onBudgetChange: (value: string) => void;
+  onCurrencyChange: (value: string) => void;
   onGeneratePlan: () => void;
   onSelectFromHistory?: (item: {
     destination: string;
@@ -39,6 +41,24 @@ interface SearchFormProps {
   }) => void;
 }
 
+const CURRENCIES = [
+  { code: "USD", name: "US Dollar", symbol: "$" },
+  { code: "EUR", name: "Euro", symbol: "€" },
+  { code: "GBP", name: "British Pound", symbol: "£" },
+  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
+  { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
+  { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
+  { code: "INR", name: "Indian Rupee", symbol: "₹" },
+  { code: "ILS", name: "Israeli Shekel", symbol: "₪" },
+  { code: "MXN", name: "Mexican Peso", symbol: "$" },
+  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
+  { code: "ZAR", name: "South African Rand", symbol: "R" },
+  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
+  { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
+];
+
 export const SearchForm: React.FC<SearchFormProps> = ({
   startDate,
   endDate,
@@ -46,6 +66,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   showEndDatePicker,
   destination,
   budget,
+  currency,
   error,
   isLoading,
   formatDate,
@@ -55,9 +76,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   onToggleEndPicker,
   onDestinationChange,
   onBudgetChange,
+  onCurrencyChange,
   onGeneratePlan,
   onSelectFromHistory,
 }) => {
+  const [showCurrencyPicker, setShowCurrencyPicker] = React.useState(false);
   return (
     <View style={styles.backgroundContainer}>
       <View style={styles.content}>
@@ -149,30 +172,64 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 
           <View style={styles.labelContainer}>
             <Icon name="wallet" size={18} color="#4A90E2" />
-            <Text style={styles.label}>Budget</Text>
+            <Text style={styles.label}>Budget (Optional)</Text>
           </View>
-          <TextInput
-            style={styles.input}
-            placeholder={`Budget (${
-              destination ? getCurrencyForDestination(destination) : "USD"
-            })`}
-            placeholderTextColor="#999999"
-            value={budget}
-            onChangeText={onBudgetChange}
-            keyboardType="numeric"
-            editable={!isLoading}
-          />
-          {destination && (
-            <Text style={styles.currencyHint}>
-              Currency: {getCurrencyForDestination(destination)}
-            </Text>
+          <View style={styles.budgetContainer}>
+            <TextInput
+              style={styles.budgetInput}
+              placeholder="Amount - Optional"
+              placeholderTextColor="#999999"
+              value={budget}
+              onChangeText={onBudgetChange}
+              keyboardType="numeric"
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              style={styles.currencySelector}
+              onPress={() => setShowCurrencyPicker(!showCurrencyPicker)}
+              disabled={isLoading}
+            >
+              <Text style={styles.currencyText}>{currency}</Text>
+              <Icon
+                name={showCurrencyPicker ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#CCCCCC"
+              />
+            </TouchableOpacity>
+          </View>
+          {showCurrencyPicker && (
+            <View style={styles.currencyDropdown}>
+              {CURRENCIES.map((curr) => (
+                <TouchableOpacity
+                  key={curr.code}
+                  style={[
+                    styles.currencyOption,
+                    currency === curr.code && styles.currencyOptionSelected,
+                  ]}
+                  onPress={() => {
+                    onCurrencyChange(curr.code);
+                    setShowCurrencyPicker(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.currencyOptionText,
+                      currency === curr.code &&
+                        styles.currencyOptionTextSelected,
+                    ]}
+                  >
+                    {curr.code} - {curr.name} ({curr.symbol})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
 
           <Button
             mode="contained"
             onPress={onGeneratePlan}
             style={styles.button}
-            disabled={!destination || !budget || isLoading}
+            disabled={!destination || isLoading}
             loading={isLoading}
             contentStyle={{ paddingVertical: 8 }}
             labelStyle={styles.buttonText}

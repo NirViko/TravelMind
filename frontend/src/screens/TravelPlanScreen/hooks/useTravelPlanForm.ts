@@ -16,6 +16,7 @@ export const useTravelPlanForm = () => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [destination, setDestination] = useState("");
   const [budget, setBudget] = useState("");
+  const [currency, setCurrency] = useState("USD");
   const [travelPlan, setTravelPlan] = useState<TravelPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +60,8 @@ export const useTravelPlanForm = () => {
   };
 
   const handleGeneratePlan = async () => {
-    if (!destination || !budget) {
-      setError("Please fill in all fields");
+    if (!destination) {
+      setError("Please enter a destination");
       return;
     }
 
@@ -69,10 +70,14 @@ export const useTravelPlanForm = () => {
       return;
     }
 
-    const budgetNum = parseFloat(budget);
-    if (isNaN(budgetNum) || budgetNum <= 0) {
-      setError("Budget must be a positive number");
-      return;
+    // Budget is optional, but if provided, must be valid
+    let budgetNum: number | undefined = undefined;
+    if (budget && budget.trim() !== "") {
+      budgetNum = parseFloat(budget);
+      if (isNaN(budgetNum) || budgetNum <= 0) {
+        setError("Budget must be a positive number");
+        return;
+      }
     }
 
     setError(null);
@@ -83,7 +88,7 @@ export const useTravelPlanForm = () => {
         startDate: formatDateForAPI(startDate),
         endDate: formatDateForAPI(endDate),
         destination,
-        budget: budgetNum,
+        ...(budgetNum !== undefined && { budget: budgetNum }),
       });
 
       if (result.success && result.data) {
@@ -110,6 +115,7 @@ export const useTravelPlanForm = () => {
     showEndDatePicker,
     destination,
     budget,
+    currency,
     travelPlan,
     error,
     isLoading: travelPlanMutation.isPending,
@@ -117,6 +123,7 @@ export const useTravelPlanForm = () => {
     setShowEndDatePicker,
     setDestination,
     setBudget,
+    setCurrency,
     setTravelPlan,
     setStartDate,
     setEndDate,

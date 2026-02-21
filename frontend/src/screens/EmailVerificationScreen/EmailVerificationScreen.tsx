@@ -14,47 +14,29 @@ import { useAuthStore } from "../../store/authStore";
 interface EmailVerificationScreenProps {
   email: string;
   onVerified: () => void;
+  onGoToLogin?: () => void;
   onResend?: () => void;
 }
 
 export const EmailVerificationScreen: React.FC<
   EmailVerificationScreenProps
-> = ({ email, onVerified, onResend }) => {
+> = ({ email, onVerified, onGoToLogin, onResend }) => {
   const [isResending, setIsResending] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
   const { user, setUser } = useAuthStore();
 
-  const checkVerificationStatus = async () => {
-    setIsChecking(true);
-    try {
-      const result = await AuthService.checkEmailVerification();
-      if (result.verified) {
-        // Update user in store
-        if (user) {
-          const updatedUser = { ...user, emailVerified: true };
-          await useAuthStore.getState().login(updatedUser);
-        }
-        onVerified();
-      } else {
-        Alert.alert(
-          "Email Not Verified",
-          "Please check your email and click the verification link."
-        );
-      }
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.message || "Failed to check verification status"
-      );
-    } finally {
-      setIsChecking(false);
+  const handleGoToLogin = () => {
+    if (onGoToLogin) {
+      onGoToLogin();
+    } else {
+      onVerified(); // Fallback to onVerified if onGoToLogin not provided
     }
   };
 
   const handleResendEmail = async () => {
     setIsResending(true);
     try {
-      const result = await AuthService.resendVerificationEmail();
+      // Pass email to resend verification (works even without token)
+      const result = await AuthService.resendVerificationEmail(email);
       if (result.success) {
         Alert.alert(
           "Email Sent",
@@ -83,57 +65,39 @@ export const EmailVerificationScreen: React.FC<
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Icon name="email-outline" size={80} color="#4A90E2" />
+          <Icon name="check-circle" size={80} color="#4A90E2" />
         </View>
 
-        <Text style={styles.title}>Verify Your Email</Text>
+        <Text style={styles.title}>Account Created Successfully!</Text>
         <Text style={styles.subtitle}>We've sent a verification email to:</Text>
         <Text style={styles.email}>{email}</Text>
         <Text style={styles.instructions}>
           Please check your inbox and click the verification link to activate
-          your account.
+          your account. After verification, you can sign in.
         </Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[styles.button, styles.primaryButton]}
-            onPress={checkVerificationStatus}
-            disabled={isChecking || isResending}
+            onPress={handleGoToLogin}
+            disabled={isResending}
           >
-            {isChecking ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Icon name="check-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.buttonText}>I've Verified My Email</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
-            onPress={handleResendEmail}
-            disabled={isResending || isChecking}
-          >
-            {isResending ? (
-              <ActivityIndicator size="small" color="#4A90E2" />
-            ) : (
-              <>
-                <Icon name="email-send" size={20} color="#4A90E2" />
-                <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                  Resend Verification Email
-                </Text>
-              </>
-            )}
+            <Icon name="login" size={20} color="#FFFFFF" />
+            <Text style={styles.buttonText}>Go to Sign In</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.helpContainer}>
-          <Icon name="help-circle-outline" size={16} color="#CCCCCC" />
-          <Text style={styles.helpText}>
-            Didn't receive the email? Check your spam folder or try resending.
-          </Text>
-        </View>
+        <TouchableOpacity
+          onPress={handleResendEmail}
+          disabled={isResending}
+          style={styles.resendLink}
+        >
+          {isResending ? (
+            <ActivityIndicator size="small" color="#4A90E2" />
+          ) : (
+            <Text style={styles.resendLinkText}>Resend Verification Email</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );

@@ -7,11 +7,14 @@ interface AuthState {
   sessionToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authError: string | null;
   setUser: (user: User | null) => void;
   setSession: (token: string | null) => void;
+  setAuthError: (error: string | null) => void;
   login: (user: User, sessionToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
+  clearError: () => void;
 }
 
 const STORAGE_KEY = "@travelmind_user";
@@ -22,23 +25,31 @@ export const useAuthStore = create<AuthState>((set) => ({
   sessionToken: null,
   isAuthenticated: false,
   isLoading: true,
+  authError: null,
   setUser: (user: User | null) => {
-    set({ user, isAuthenticated: !!user });
+    set({ user, isAuthenticated: !!user, authError: null });
   },
   setSession: (token: string | null) => {
     set({ sessionToken: token });
+  },
+  setAuthError: (error: string | null) => {
+    set({ authError: error });
+  },
+  clearError: () => {
+    set({ authError: null });
   },
   login: async (user: User, sessionToken?: string) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user));
       if (sessionToken) {
         await AsyncStorage.setItem(SESSION_KEY, sessionToken);
-        set({ user, sessionToken, isAuthenticated: true });
+        set({ user, sessionToken, isAuthenticated: true, authError: null });
       } else {
-        set({ user, isAuthenticated: true });
+        set({ user, isAuthenticated: true, authError: null });
       }
     } catch (error) {
-      console.error("Error saving user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save authentication data";
+      set({ authError: errorMessage });
       throw error;
     }
   },
@@ -46,14 +57,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await AsyncStorage.removeItem(STORAGE_KEY);
       await AsyncStorage.removeItem(SESSION_KEY);
-      set({ user: null, sessionToken: null, isAuthenticated: false });
+      set({ 
+        user: null, 
+        sessionToken: null, 
+        isAuthenticated: false, 
+        authError: null 
+      });
     } catch (error) {
-      console.error("Error removing user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to logout";
+      set({ authError: errorMessage });
       throw error;
     }
   },
   loadUser: async () => {
     try {
+      set({ isLoading: true, authError: null });
       const [userData, sessionData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY),
         AsyncStorage.getItem(SESSION_KEY),
@@ -61,13 +79,45 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (userData) {
         const user = JSON.parse(userData);
         const sessionToken = sessionData || null;
-        set({ user, sessionToken, isAuthenticated: true, isLoading: false });
+        // Validate that we have both user and token for proper authentication
+        if (user && sessionToken) {
+          set({ 
+            user, 
+            sessionToken, 
+            isAuthenticated: true, 
+            isLoading: false,
+            authError: null 
+          });
+        } else {
+          // Invalid state - clear it
+          await AsyncStorage.removeItem(STORAGE_KEY);
+          await AsyncStorage.removeItem(SESSION_KEY);
+          set({ 
+            user: null, 
+            sessionToken: null, 
+            isAuthenticated: false, 
+            isLoading: false,
+            authError: null 
+          });
+        }
       } else {
-        set({ user: null, sessionToken: null, isAuthenticated: false, isLoading: false });
+        set({ 
+          user: null, 
+          sessionToken: null, 
+          isAuthenticated: false, 
+          isLoading: false,
+          authError: null 
+        });
       }
     } catch (error) {
       console.error("Error loading user:", error);
-      set({ user: null, sessionToken: null, isAuthenticated: false, isLoading: false });
+      set({ 
+        user: null, 
+        sessionToken: null, 
+        isAuthenticated: false, 
+        isLoading: false,
+        authError: null 
+      });
     }
   },
 }));
