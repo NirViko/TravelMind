@@ -7,6 +7,26 @@ import { TravelPlanRequest, TravelPlanResponse } from "../types/travel";
 
 const router = Router();
 
+// GET /api/travel/destinations/autocomplete?input=xxx - dynamic suggestions via Google Places API
+router.get(
+  "/destinations/autocomplete",
+  async (req: Request, res: Response) => {
+    try {
+      const input = typeof req.query.input === "string" ? req.query.input : "";
+      const destinations = await GooglePlacesService.getDestinationSuggestions(
+        input
+      );
+      res.json({ destinations });
+    } catch (error) {
+      console.error("Destination autocomplete error:", error);
+      res.status(500).json({
+        destinations: [],
+        error: "Failed to fetch destination suggestions",
+      });
+    }
+  }
+);
+
 // Generate travel plan endpoint
 router.post("/plan", async (req: Request, res: Response) => {
   try {

@@ -30,8 +30,8 @@ export const styles = StyleSheet.create({
     minHeight: "100%",
   },
   header: {
-    marginBottom: 32,
-    paddingTop: 60,
+    marginBottom: 12,
+    paddingTop: 80,
   },
   subtitle: {
     fontSize: 14,
@@ -92,10 +92,39 @@ export const styles = StyleSheet.create({
     borderColor: "#3A3A3A",
     borderRadius: 18,
     padding: 18,
-    marginBottom: 20,
+    marginBottom: 4,
     fontSize: 16,
     color: "#FFFFFF",
     backgroundColor: "#1A1A1A",
+  },
+  destinationDropdown: {
+    marginTop: 0,
+    marginBottom: 20,
+    backgroundColor: "#2A2A2A",
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "#3A3A3A",
+    maxHeight: 280,
+    overflow: "hidden",
+  },
+  destinationScrollView: {
+    height: 260,
+  },
+  destinationScrollContent: {
+    paddingBottom: 8,
+  },
+  destinationOption: {
+    width: "100%",
+    minHeight: 52,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#3A3A3A",
+    justifyContent: "center",
+  },
+  destinationOptionText: {
+    fontSize: 16,
+    color: "#CCCCCC",
   },
   budgetContainer: {
     flexDirection: "row",

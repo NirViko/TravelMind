@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState, useEffect, useRef, FC } from "react";
 import {
   View,
   TextInput,
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
+  Keyboard,
 } from "react-native";
 import { Button } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -13,6 +15,7 @@ import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { styles } from "../styles";
 import { getCurrencyForDestination } from "../../../utils/currency";
 import { SearchHistory } from "./SearchHistory";
+import { travelApi } from "../../../api/travel";
 
 interface SearchFormProps {
   startDate: Date;
@@ -59,7 +62,7 @@ const CURRENCIES = [
   { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
 ];
 
-export const SearchForm: React.FC<SearchFormProps> = ({
+export const SearchForm: FC<SearchFormProps> = ({
   startDate,
   endDate,
   showStartDatePicker,
@@ -80,7 +83,73 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   onGeneratePlan,
   onSelectFromHistory,
 }) => {
-  const [showCurrencyPicker, setShowCurrencyPicker] = React.useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<
+    string[]
+  >([]);
+  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
+  const [autocompleteLoading, setAutocompleteLoading] = useState(false);
+  const [inputValue, setInputValue] = useState(destination);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectingRef = useRef(false);
+  const dismissingKeyboardForListRef = useRef(false);
+
+  useEffect(() => {
+    console.log("inputValue", inputValue);
+  }, [inputValue]);
+
+  React.useEffect(() => {
+    setInputValue(destination);
+  }, [destination]);
+
+  React.useEffect(() => {
+    const trimmed = inputValue.trim();
+    if (trimmed.length < 2) {
+      setDestinationSuggestions([]);
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      setAutocompleteLoading(true);
+      travelApi
+        .getDestinationsAutocomplete(trimmed)
+        .then(({ destinations }) => {
+          if (destinations.length) {
+            setDestinationSuggestions(destinations);
+            dismissingKeyboardForListRef.current = true;
+            Keyboard.dismiss();
+            setTimeout(() => {
+              dismissingKeyboardForListRef.current = false;
+            }, 600);
+          }
+        })
+        .catch(() => setDestinationSuggestions([]))
+        .finally(() => setAutocompleteLoading(false));
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [inputValue]);
+
+  const showSuggestions =
+    showDestinationDropdown &&
+    inputValue.trim().length >= 2 &&
+    (destinationSuggestions.length > 0 || autocompleteLoading);
+
+  const handleSelectDestination = (value: string) => {
+    selectingRef.current = true;
+    Keyboard.dismiss();
+    setInputValue(value);
+    onDestinationChange(value);
+    setDestinationSuggestions([]);
+    setShowDestinationDropdown(false);
+    setTimeout(() => {
+      selectingRef.current = false;
+    }, 100);
+  };
+
   return (
     <View style={styles.backgroundContainer}>
       <View style={styles.content}>
@@ -165,10 +234,67 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             style={styles.input}
             placeholder="Where do you want to go? (e.g., Paris, France)"
             placeholderTextColor="#999999"
-            value={destination}
-            onChangeText={onDestinationChange}
+            value={inputValue}
+            onChangeText={(text) => {
+              setInputValue(text);
+              onDestinationChange(text);
+              setShowDestinationDropdown(true);
+            }}
+            onFocus={() => setShowDestinationDropdown(true)}
+            onBlur={() => {
+              if (selectingRef.current || dismissingKeyboardForListRef.current)
+                return;
+              setTimeout(() => setShowDestinationDropdown(false), 500);
+            }}
             editable={!isLoading}
           />
+          {showSuggestions && (
+            <View style={styles.destinationDropdown}>
+              {autocompleteLoading ? (
+                <View
+                  style={[
+                    styles.destinationOption,
+                    { flexDirection: "row", alignItems: "center" },
+                  ]}
+                >
+                  <ActivityIndicator size="small" color="#4A90E2" />
+                  <Text
+                    style={[styles.destinationOptionText, { marginLeft: 8 }]}
+                  >
+                    Searching...
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  style={styles.destinationScrollView}
+                  contentContainerStyle={styles.destinationScrollContent}
+                  keyboardShouldPersistTaps="always"
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={true}
+                  bounces={true}
+                  onScrollBeginDrag={() => {
+                    dismissingKeyboardForListRef.current = true;
+                    Keyboard.dismiss();
+                    setTimeout(() => {
+                      dismissingKeyboardForListRef.current = false;
+                    }, 600);
+                  }}
+                >
+                  {destinationSuggestions.map((suggestion) => (
+                    <TouchableOpacity
+                      key={suggestion}
+                      style={styles.destinationOption}
+                      onPress={() => handleSelectDestination(suggestion)}
+                    >
+                      <Text style={styles.destinationOptionText}>
+                        {suggestion}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
 
           <View style={styles.labelContainer}>
             <Icon name="wallet" size={18} color="#4A90E2" />
@@ -229,7 +355,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             mode="contained"
             onPress={onGeneratePlan}
             style={styles.button}
-            disabled={!destination || isLoading}
+            disabled={!inputValue.trim() || isLoading}
             loading={isLoading}
             contentStyle={{ paddingVertical: 8 }}
             labelStyle={styles.buttonText}

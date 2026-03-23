@@ -29,7 +29,48 @@ interface PlaceDetailsResponse {
   status: string;
 }
 
+interface AutocompletePrediction {
+  description: string;
+  place_id: string;
+}
+
+interface PlacesAutocompleteResponse {
+  predictions?: AutocompletePrediction[];
+  status: string;
+  error_message?: string;
+}
+
 export class GooglePlacesService {
+  /**
+   * Get destination suggestions (cities/places) for autocomplete using Google Places API
+   */
+  static async getDestinationSuggestions(input: string): Promise<string[]> {
+    if (!GOOGLE_PLACES_API_KEY) {
+      return [];
+    }
+    const trimmed = input.trim();
+    if (trimmed.length < 2) {
+      return [];
+    }
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+        trimmed
+      )}&types=geocode&key=${GOOGLE_PLACES_API_KEY}`;
+      const response = await fetch(url);
+      const data = (await response.json()) as PlacesAutocompleteResponse;
+      if (data.status === "OK" && data.predictions && data.predictions.length > 0) {
+        return data.predictions.map((p) => p.description);
+      }
+      if (data.status === "REQUEST_DENIED" && data.error_message) {
+        console.warn("Places Autocomplete REQUEST_DENIED:", data.error_message);
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching destination autocomplete:", error);
+      return [];
+    }
+  }
+
   /**
    * Get photo URL from Google Places API
    */
