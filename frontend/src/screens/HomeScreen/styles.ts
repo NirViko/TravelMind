@@ -1,11 +1,9 @@
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet } from "react-native";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-// Colors matching the design: bright blue (#4A90E2), sand/beige (#F5E6D3), white
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#000000",
   },
   backgroundGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -13,97 +11,123 @@ export const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  backgroundContainer: {
-    minHeight: "100%",
-    width: "100%",
+  scrollContent: {
+    paddingBottom: 120,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    height: 320,
+  backgroundContainer: {
+    flex: 1,
+    width: "100%",
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingTop: 100,
     paddingBottom: 40,
-    minHeight: "100%",
   },
-  header: {
-    marginBottom: 12,
-    paddingTop: 80,
+
+  // Header section
+  headerContainer: {
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingHorizontal: 20,
+    zIndex: 10,
+  },
+  backButtonPlaceholder: {
+    width: 44,
+  },
+  headerTitle: {
+    fontSize: 0,
+    color: "transparent",
+  },
+  logoutButton: {
+    backgroundColor: "rgba(26, 26, 26, 0.95)",
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+
+  // Title section inside scrollview
+  titleSection: {
+    marginBottom: 36,
+    alignItems: "center",
+  },
+  mainTitle: {
+    fontSize: 44,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: -1,
+    textAlign: "center",
+    lineHeight: 50,
   },
   subtitle: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.85)",
-    lineHeight: 20,
-    fontWeight: "400",
-    letterSpacing: 0.3,
+    fontSize: 16,
+    color: "#888888",
     textAlign: "center",
+    marginTop: 10,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
+
+  // Form layout
   formCard: {
-    backgroundColor: "#2A2A2A",
-    borderRadius: 28,
-    padding: 28,
-    marginTop: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: "#3A3A3A",
+    backgroundColor: "transparent",
   },
+
+  // Field labels
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-    marginTop: 20,
+    gap: 6,
+    marginBottom: 10,
+    marginTop: 24,
   },
   label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    letterSpacing: 0.2,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6B7FD4",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
   },
-  dateInput: {
-    borderWidth: 1.5,
-    borderColor: "#3A3A3A",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 20,
+
+  // Destination input
+  destinationInputWrapper: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#1A1A1A",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    paddingHorizontal: 16,
+    marginBottom: 4,
   },
-  dateText: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "500",
-  },
-  dateIcon: {
-    fontSize: 22,
-    color: "#CCCCCC",
+  destinationIcon: {
+    marginRight: 10,
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: "#3A3A3A",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 4,
+    flex: 1,
+    paddingVertical: 18,
     fontSize: 16,
     color: "#FFFFFF",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "transparent",
   },
+
+  // Destination dropdown
   destinationDropdown: {
-    marginTop: 0,
-    marginBottom: 20,
-    backgroundColor: "#2A2A2A",
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: "#3A3A3A",
+    marginTop: 4,
+    marginBottom: 8,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
     maxHeight: 280,
     overflow: "hidden",
   },
@@ -116,26 +140,322 @@ export const styles = StyleSheet.create({
   destinationOption: {
     width: "100%",
     minHeight: 52,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#3A3A3A",
+    borderBottomColor: "#2A2A2A",
     justifyContent: "center",
   },
   destinationOptionText: {
     fontSize: 16,
     color: "#CCCCCC",
   },
+
+  // Dates row
+  datesRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  dateFieldWrapper: {
+    flex: 1,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#1A1A1A",
+  },
+  dateText: {
+    fontSize: 15,
+    color: "#888888",
+    fontWeight: "400",
+    flex: 1,
+  },
+  dateTextFilled: {
+    color: "#FFFFFF",
+  },
+
+  // Budget slider
+  budgetHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    marginTop: 24,
+  },
+  budgetLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  budgetValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  sliderContainer: {
+    marginBottom: 6,
+  },
+  slider: {
+    width: "100%",
+    height: 40,
+  },
+  sliderLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: -4,
+  },
+  sliderLabel: {
+    fontSize: 11,
+    color: "#666666",
+    letterSpacing: 0.5,
+    fontWeight: "500",
+  },
+
+  // Voyage preferences
+  voyageCard: {
+    backgroundColor: "#141414",
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: "#222222",
+  },
+  voyageTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 16,
+  },
+  chipsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 10,
+  },
+  chipPlaceholder: {
+    flex: 1,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    backgroundColor: "#1A1A1A",
+    gap: 8,
+    flex: 1,
+    justifyContent: "center",
+  },
+  chipSelected: {
+    borderColor: "#6B7FD4",
+    backgroundColor: "rgba(107, 127, 212, 0.15)",
+  },
+  chipText: {
+    fontSize: 15,
+    color: "#CCCCCC",
+    fontWeight: "500",
+  },
+  chipTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  // Submit button
+  buttonWrapper: {
+    marginTop: 28,
+    borderRadius: 30,
+    overflow: "hidden",
+  },
+  buttonGradient: {
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  buttonText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1A1A2E",
+    letterSpacing: 0.3,
+  },
+  button: {
+    marginTop: 0,
+    borderRadius: 30,
+  },
+
+  // Loading & error
+  loadingContainer: {
+    alignItems: "center",
+    marginTop: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#888888",
+    fontSize: 14,
+    textAlign: "center",
+  },
+  errorCard: {
+    marginTop: 20,
+    backgroundColor: "#2A1414",
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#5A2020",
+  },
+  errorTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FF6B6B",
+    marginBottom: 6,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#FF6B6B",
+    fontWeight: "400",
+  },
+
+  // iOS picker
+  iosPickerButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#1A1A1A",
+    borderTopWidth: 1,
+    borderTopColor: "#2A2A2A",
+    borderRadius: 12,
+  },
+
+  // Top navigation bar
+  topNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1A1A1A",
+  },
+  topNavTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+  topNavIconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // Bottom navigation bar
+  bottomNav: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0D0D0D",
+    borderTopWidth: 1,
+    borderTopColor: "#1A1A1A",
+    paddingTop: 10,
+    paddingHorizontal: 8,
+  },
+  bottomNavTab: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 4,
+    position: "relative",
+  },
+  activeCircle: {
+    position: "absolute",
+    top: 8,
+    left: -10,
+    width: 72,
+    height: 52,
+    borderRadius: 26,
+    overflow: "hidden",
+  },
+  activeCircleGradient: {
+    flex: 1,
+    borderRadius: 26,
+  },
+  tabIconWrapper: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabPill: {
+    position: "absolute",
+    top: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#5B6FD4",
+  },
+  bottomNavLabel: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: "#555555",
+    letterSpacing: 0.8,
+  },
+  bottomNavLabelActive: {
+    color: "#FFFFFF",
+  },
+
+  // FAB Add button
+  fabBtn: {
+    marginLeft: 8,
+    borderRadius: 28,
+    overflow: "hidden",
+  },
+  fabGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    gap: 6,
+    borderRadius: 28,
+  },
+
+  // Legacy (kept for SearchHistory compatibility)
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    height: 320,
+  },
+  header: {
+    marginBottom: 12,
+    paddingTop: 80,
+  },
   budgetContainer: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 20,
   },
   budgetInput: {
     flex: 1,
-    borderWidth: 1.5,
-    borderColor: "#3A3A3A",
-    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 14,
     padding: 18,
     fontSize: 16,
     color: "#FFFFFF",
@@ -145,10 +465,10 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderWidth: 1.5,
-    borderColor: "#3A3A3A",
-    borderRadius: 18,
-    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 18,
     backgroundColor: "#1A1A1A",
     minWidth: 100,
@@ -160,136 +480,36 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
   },
   currencyDropdown: {
-    marginTop: -16,
-    marginBottom: 20,
-    backgroundColor: "#2A2A2A",
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: "#3A3A3A",
+    marginTop: 4,
+    marginBottom: 8,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
     maxHeight: 300,
     overflow: "hidden",
   },
   currencyOption: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#3A3A3A",
+    borderBottomColor: "#2A2A2A",
   },
   currencyOptionSelected: {
-    backgroundColor: "#3A3A3A",
+    backgroundColor: "#2A2A2A",
   },
   currencyOptionText: {
     fontSize: 15,
     color: "#CCCCCC",
   },
   currencyOptionTextSelected: {
-    color: "#4A90E2",
+    color: "#6B7FD4",
     fontWeight: "600",
   },
-  button: {
-    marginTop: 24,
-    borderRadius: 18,
-    paddingVertical: 6,
-    backgroundColor: "#000000",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 0.5,
-  },
-  loadingContainer: {
-    alignItems: "center",
-    marginTop: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    color: "#CCCCCC",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  errorCard: {
-    marginTop: 20,
-    backgroundColor: "#3A2A2A",
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1.5,
-    borderColor: "#5A3A3A",
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#FF6B6B",
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    color: "#FF6B6B",
-    fontWeight: "500",
-  },
   currencyHint: {
-    color: "#CCCCCC",
-    marginTop: -12,
+    color: "#888888",
+    marginTop: -8,
     marginBottom: 16,
-    marginLeft: 20,
+    marginLeft: 16,
     fontSize: 13,
-    fontWeight: "500",
-  },
-  iosPickerButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: "#2A2A2A",
-    borderTopWidth: 1,
-    borderTopColor: "#3A3A3A",
-    borderRadius: 12,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  headerContainer: {
-    position: "absolute",
-    top: 50,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    zIndex: 10,
-  },
-  logoutButton: {
-    backgroundColor: "rgba(26, 26, 26, 0.95)",
-    borderRadius: 22,
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  backButtonPlaceholder: {
-    width: 44,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -1,
-    textShadowColor: "rgba(74, 144, 226, 0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    flex: 1,
-    textAlign: "center",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, FC } from "react";
+import React, { useState, useRef, FC } from "react";
 import {
   View,
   TextInput,
@@ -8,13 +8,13 @@ import {
   ScrollView,
   Keyboard,
 } from "react-native";
+import Slider from "@react-native-community/slider";
 import { Button } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Platform } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../styles";
-import { getCurrencyForDestination } from "../../../utils/currency";
-import { SearchHistory } from "./SearchHistory";
 import { travelApi } from "../../../api/travel";
 
 interface SearchFormProps {
@@ -44,23 +44,21 @@ interface SearchFormProps {
   }) => void;
 }
 
-const CURRENCIES = [
-  { code: "USD", name: "US Dollar", symbol: "$" },
-  { code: "EUR", name: "Euro", symbol: "€" },
-  { code: "GBP", name: "British Pound", symbol: "£" },
-  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
-  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
-  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
-  { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
-  { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
-  { code: "INR", name: "Indian Rupee", symbol: "₹" },
-  { code: "ILS", name: "Israeli Shekel", symbol: "₪" },
-  { code: "MXN", name: "Mexican Peso", symbol: "$" },
-  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
-  { code: "ZAR", name: "South African Rand", symbol: "R" },
-  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-  { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
+const VOYAGE_PREFERENCES = [
+  { id: "culinary", label: "Culinary", icon: "silverware-fork-knife" },
+  { id: "art", label: "Art & Design", icon: "palette" },
+  { id: "shopping", label: "Shopping", icon: "shopping" },
+  { id: "relaxation", label: "Relaxation", icon: "spa" },
+  { id: "adventure", label: "Adventure", icon: "hiking" },
+  { id: "culture", label: "Culture", icon: "bank" },
 ];
+
+const BUDGET_MAX = 5000;
+
+const formatBudgetDisplay = (value: number): string => {
+  if (value === 0) return "$0";
+  return "$" + value.toLocaleString();
+};
 
 export const SearchForm: FC<SearchFormProps> = ({
   startDate,
@@ -69,7 +67,7 @@ export const SearchForm: FC<SearchFormProps> = ({
   showEndDatePicker,
   destination,
   budget,
-  currency,
+  currency: _currency,
   error,
   isLoading,
   formatDate,
@@ -79,24 +77,21 @@ export const SearchForm: FC<SearchFormProps> = ({
   onToggleEndPicker,
   onDestinationChange,
   onBudgetChange,
-  onCurrencyChange,
+  onCurrencyChange: _onCurrencyChange,
   onGeneratePlan,
-  onSelectFromHistory,
+  onSelectFromHistory: _onSelectFromHistory,
 }) => {
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [destinationSuggestions, setDestinationSuggestions] = useState<
-    string[]
-  >([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<string[]>([]);
   const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
   const [autocompleteLoading, setAutocompleteLoading] = useState(false);
   const [inputValue, setInputValue] = useState(destination);
+  const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
+  const [sliderValue, setSliderValue] = useState<number>(
+    budget ? Math.min(parseFloat(budget) || 2500, BUDGET_MAX) : 2500
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectingRef = useRef(false);
   const dismissingKeyboardForListRef = useRef(false);
-
-  useEffect(() => {
-    console.log("inputValue", inputValue);
-  }, [inputValue]);
 
   React.useEffect(() => {
     setInputValue(destination);
@@ -108,7 +103,6 @@ export const SearchForm: FC<SearchFormProps> = ({
       setDestinationSuggestions([]);
       return;
     }
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
@@ -150,104 +144,57 @@ export const SearchForm: FC<SearchFormProps> = ({
     }, 100);
   };
 
+  const togglePreference = (id: string) => {
+    setSelectedPreferences((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  };
+
+  const isStartDateSet = formatDate(startDate) !== formatDate(new Date(0));
+  const isEndDateSet = formatDate(endDate) !== formatDate(new Date(0));
+
   return (
     <View style={styles.backgroundContainer}>
       <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.subtitle}>Create your dream journey with AI</Text>
+        {/* Title */}
+        <View style={styles.titleSection}>
+          <Text style={styles.mainTitle}>Where to Next?</Text>
+          <Text style={styles.subtitle}>
+            Set your parameters for a nocturnal escape.
+          </Text>
         </View>
 
         <View style={styles.formCard}>
-          {onSelectFromHistory ? (
-            <SearchHistory onSelectSearch={onSelectFromHistory} />
-          ) : null}
-
+          {/* Destination */}
           <View style={styles.labelContainer}>
-            <Icon name="calendar-start" size={18} color="#4A90E2" />
-            <Text style={styles.label}>Start Date</Text>
-          </View>
-          <TouchableOpacity
-            onPress={onToggleStartPicker}
-            disabled={isLoading}
-            style={styles.dateInput}
-          >
-            <Text style={styles.dateText}>{formatDate(startDate)}</Text>
-            <Icon name="calendar" size={22} color="#CCCCCC" />
-          </TouchableOpacity>
-          {showStartDatePicker && (
-            <>
-              <DateTimePicker
-                value={startDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={onStartDateChange}
-                minimumDate={new Date()}
-              />
-              {Platform.OS === "ios" && (
-                <View style={styles.iosPickerButtons}>
-                  <Button onPress={onToggleStartPicker}>Cancel</Button>
-                  <Button mode="contained" onPress={onToggleStartPicker}>
-                    Done
-                  </Button>
-                </View>
-              )}
-            </>
-          )}
-
-          <View style={styles.labelContainer}>
-            <Icon name="calendar-end" size={18} color="#4A90E2" />
-            <Text style={styles.label}>End Date</Text>
-          </View>
-          <TouchableOpacity
-            onPress={onToggleEndPicker}
-            disabled={isLoading}
-            style={styles.dateInput}
-          >
-            <Text style={styles.dateText}>{formatDate(endDate)}</Text>
-            <Icon name="calendar" size={22} color="#CCCCCC" />
-          </TouchableOpacity>
-          {showEndDatePicker && (
-            <>
-              <DateTimePicker
-                value={endDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={onEndDateChange}
-                minimumDate={new Date(startDate.getTime() + 86400000)}
-              />
-              {Platform.OS === "ios" && (
-                <View style={styles.iosPickerButtons}>
-                  <Button onPress={onToggleEndPicker}>Cancel</Button>
-                  <Button mode="contained" onPress={onToggleEndPicker}>
-                    Done
-                  </Button>
-                </View>
-              )}
-            </>
-          )}
-
-          <View style={styles.labelContainer}>
-            <Icon name="map-marker" size={18} color="#4A90E2" />
             <Text style={styles.label}>Destination</Text>
           </View>
-          <TextInput
-            style={styles.input}
-            placeholder="Where do you want to go? (e.g., Paris, France)"
-            placeholderTextColor="#999999"
-            value={inputValue}
-            onChangeText={(text) => {
-              setInputValue(text);
-              onDestinationChange(text);
-              setShowDestinationDropdown(true);
-            }}
-            onFocus={() => setShowDestinationDropdown(true)}
-            onBlur={() => {
-              if (selectingRef.current || dismissingKeyboardForListRef.current)
-                return;
-              setTimeout(() => setShowDestinationDropdown(false), 500);
-            }}
-            editable={!isLoading}
-          />
+          <View style={styles.destinationInputWrapper}>
+            <Icon
+              name="map-marker"
+              size={20}
+              color="#666666"
+              style={styles.destinationIcon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Metzingen, Germany"
+              placeholderTextColor="#555555"
+              value={inputValue}
+              onChangeText={(text) => {
+                setInputValue(text);
+                onDestinationChange(text);
+                setShowDestinationDropdown(true);
+              }}
+              onFocus={() => setShowDestinationDropdown(true)}
+              onBlur={() => {
+                if (selectingRef.current || dismissingKeyboardForListRef.current)
+                  return;
+                setTimeout(() => setShowDestinationDropdown(false), 500);
+              }}
+              editable={!isLoading}
+            />
+          </View>
           {showSuggestions && (
             <View style={styles.destinationDropdown}>
               {autocompleteLoading ? (
@@ -257,10 +204,8 @@ export const SearchForm: FC<SearchFormProps> = ({
                     { flexDirection: "row", alignItems: "center" },
                   ]}
                 >
-                  <ActivityIndicator size="small" color="#4A90E2" />
-                  <Text
-                    style={[styles.destinationOptionText, { marginLeft: 8 }]}
-                  >
+                  <ActivityIndicator size="small" color="#6B7FD4" />
+                  <Text style={[styles.destinationOptionText, { marginLeft: 8 }]}>
                     Searching...
                   </Text>
                 </View>
@@ -286,9 +231,7 @@ export const SearchForm: FC<SearchFormProps> = ({
                       style={styles.destinationOption}
                       onPress={() => handleSelectDestination(suggestion)}
                     >
-                      <Text style={styles.destinationOptionText}>
-                        {suggestion}
-                      </Text>
+                      <Text style={styles.destinationOptionText}>{suggestion}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -296,86 +239,185 @@ export const SearchForm: FC<SearchFormProps> = ({
             </View>
           )}
 
-          <View style={styles.labelContainer}>
-            <Icon name="wallet" size={18} color="#4A90E2" />
-            <Text style={styles.label}>Budget (Optional)</Text>
-          </View>
-          <View style={styles.budgetContainer}>
-            <TextInput
-              style={styles.budgetInput}
-              placeholder="Amount - Optional"
-              placeholderTextColor="#999999"
-              value={budget}
-              onChangeText={onBudgetChange}
-              keyboardType="numeric"
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              style={styles.currencySelector}
-              onPress={() => setShowCurrencyPicker(!showCurrencyPicker)}
-              disabled={isLoading}
-            >
-              <Text style={styles.currencyText}>{currency}</Text>
-              <Icon
-                name={showCurrencyPicker ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="#CCCCCC"
-              />
-            </TouchableOpacity>
-          </View>
-          {showCurrencyPicker && (
-            <View style={styles.currencyDropdown}>
-              {CURRENCIES.map((curr) => (
-                <TouchableOpacity
-                  key={curr.code}
+          {/* Dates side by side */}
+          <View style={styles.datesRow}>
+            <View style={styles.dateFieldWrapper}>
+              <View style={styles.labelContainer}>
+                <Text style={styles.label}>Start Date</Text>
+              </View>
+              <TouchableOpacity
+                onPress={onToggleStartPicker}
+                disabled={isLoading}
+                style={styles.dateInput}
+              >
+                <Text
                   style={[
-                    styles.currencyOption,
-                    currency === curr.code && styles.currencyOptionSelected,
+                    styles.dateText,
+                    isStartDateSet && styles.dateTextFilled,
                   ]}
-                  onPress={() => {
-                    onCurrencyChange(curr.code);
-                    setShowCurrencyPicker(false);
-                  }}
                 >
-                  <Text
-                    style={[
-                      styles.currencyOptionText,
-                      currency === curr.code &&
-                        styles.currencyOptionTextSelected,
-                    ]}
-                  >
-                    {curr.code} - {curr.name} ({curr.symbol})
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                  {formatDate(startDate)}
+                </Text>
+                <Icon name="calendar" size={18} color="#555555" />
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <>
+                  <DateTimePicker
+                    value={startDate}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={onStartDateChange}
+                    minimumDate={new Date()}
+                  />
+                  {Platform.OS === "ios" && (
+                    <View style={styles.iosPickerButtons}>
+                      <Button onPress={onToggleStartPicker}>Cancel</Button>
+                      <Button mode="contained" onPress={onToggleStartPicker}>
+                        Done
+                      </Button>
+                    </View>
+                  )}
+                </>
+              )}
             </View>
-          )}
 
-          <Button
-            mode="contained"
+            <View style={styles.dateFieldWrapper}>
+              <View style={styles.labelContainer}>
+                <Text style={styles.label}>End Date</Text>
+              </View>
+              <TouchableOpacity
+                onPress={onToggleEndPicker}
+                disabled={isLoading}
+                style={styles.dateInput}
+              >
+                <Text
+                  style={[
+                    styles.dateText,
+                    isEndDateSet && styles.dateTextFilled,
+                  ]}
+                >
+                  {formatDate(endDate)}
+                </Text>
+                <Icon name="calendar" size={18} color="#555555" />
+              </TouchableOpacity>
+              {showEndDatePicker && (
+                <>
+                  <DateTimePicker
+                    value={endDate}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={onEndDateChange}
+                    minimumDate={new Date(startDate.getTime() + 86400000)}
+                  />
+                  {Platform.OS === "ios" && (
+                    <View style={styles.iosPickerButtons}>
+                      <Button onPress={onToggleEndPicker}>Cancel</Button>
+                      <Button mode="contained" onPress={onToggleEndPicker}>
+                        Done
+                      </Button>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          </View>
+
+          {/* Budget slider */}
+          <View style={styles.budgetHeaderRow}>
+            <View style={styles.budgetLabelContainer}>
+              <Text style={styles.label}>Budget Preference</Text>
+            </View>
+            <Text style={styles.budgetValue}>
+              {formatBudgetDisplay(sliderValue)}
+            </Text>
+          </View>
+          <View style={styles.sliderContainer}>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={BUDGET_MAX}
+              step={100}
+              value={sliderValue}
+              onValueChange={(val) => {
+                setSliderValue(val);
+                onBudgetChange(val > 0 ? String(val) : "");
+              }}
+              minimumTrackTintColor="#6B7FD4"
+              maximumTrackTintColor="#2A2A2A"
+              thumbTintColor="#6B7FD4"
+            />
+            <View style={styles.sliderLabels}>
+              <Text style={styles.sliderLabel}>EXPLORER</Text>
+              <Text style={styles.sliderLabel}>LUXURY</Text>
+            </View>
+          </View>
+
+          {/* Voyage Preferences */}
+          <View style={styles.voyageCard}>
+            <Text style={styles.voyageTitle}>Voyage Preferences</Text>
+            {Array.from({ length: Math.ceil(VOYAGE_PREFERENCES.length / 2) }).map((_, rowIndex) => {
+              const left = VOYAGE_PREFERENCES[rowIndex * 2];
+              const right = VOYAGE_PREFERENCES[rowIndex * 2 + 1];
+              return (
+                <View key={rowIndex} style={styles.chipsRow}>
+                  {[left, right].map((pref) => {
+                    if (!pref) return <View key="empty" style={styles.chipPlaceholder} />;
+                    const isSelected = selectedPreferences.includes(pref.id);
+                    return (
+                      <TouchableOpacity
+                        key={pref.id}
+                        style={[styles.chip, isSelected && styles.chipSelected]}
+                        onPress={() => togglePreference(pref.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Icon
+                          name={pref.icon as any}
+                          size={16}
+                          color={isSelected ? "#FFFFFF" : "#888888"}
+                        />
+                        <Text
+                          style={[
+                            styles.chipText,
+                            isSelected && styles.chipTextSelected,
+                          ]}
+                        >
+                          {pref.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Submit button */}
+          <TouchableOpacity
+            style={styles.buttonWrapper}
             onPress={onGeneratePlan}
-            style={styles.button}
             disabled={!inputValue.trim() || isLoading}
-            loading={isLoading}
-            contentStyle={{ paddingVertical: 8 }}
-            labelStyle={styles.buttonText}
-            icon={() => <Icon name="magnify" size={22} color="#FFFFFF" />}
+            activeOpacity={0.85}
           >
-            {isLoading ? "Creating Your Plan..." : "Generate Travel Plan"}
-          </Button>
-
-          {isLoading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4A90E2" />
-              <Text style={styles.loadingText}>
-                AI is creating your perfect travel plan...
+            <LinearGradient
+              colors={["#6B7FD4", "#8B9FE8"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.buttonGradient}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#1A1A2E" />
+              ) : (
+                <Icon name="star-four-points" size={20} color="#1A1A2E" />
+              )}
+              <Text style={styles.buttonText}>
+                {isLoading ? "Creating Your Plan..." : "Plan Your Trip"}
               </Text>
-            </View>
-          )}
+            </LinearGradient>
+          </TouchableOpacity>
 
           {error && (
             <View style={styles.errorCard}>
-              <Text style={styles.errorTitle}>Error:</Text>
+              <Text style={styles.errorTitle}>Error</Text>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
