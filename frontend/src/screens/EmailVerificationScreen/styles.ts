@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#2A2A2A",
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: "#4A90E2",
+    borderColor: "#6B7FD4",
   },
   title: {
     fontSize: 28,
@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
   email: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#4A90E2",
+    color: "#6B7FD4",
     textAlign: "center",
     marginBottom: 24,
   },
@@ -63,8 +63,8 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: "#4A90E2",
-    shadowColor: "#4A90E2",
+    backgroundColor: "#6B7FD4",
+    shadowColor: "#6B7FD4",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -73,7 +73,7 @@ export const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: "#4A90E2",
+    borderColor: "#6B7FD4",
   },
   buttonText: {
     fontSize: 16,
@@ -81,7 +81,7 @@ export const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   secondaryButtonText: {
-    color: "#4A90E2",
+    color: "#6B7FD4",
   },
   resendLink: {
     paddingVertical: 12,
@@ -89,7 +89,7 @@ export const styles = StyleSheet.create({
   },
   resendLinkText: {
     fontSize: 14,
-    color: "#4A90E2",
+    color: "#6B7FD4",
     fontWeight: "500",
   },
 });

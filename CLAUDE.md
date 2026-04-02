@@ -107,6 +107,11 @@
 3. Fetch data via React Query
 4. Use existing components where possible
 
+# Every style component
+
+1. Write every style in style file - style.ts
+2. don't write duplicate style.
+
 # Known Pitfalls
 
 - Do not call external APIs directly from frontend — always go through backend

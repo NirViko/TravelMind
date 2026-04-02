@@ -5,7 +5,7 @@ import { TravelPlan } from "../../../types/travel";
 import { useDateFormatter } from "../../../hooks/useDateFormatter";
 import { useSearchHistoryStore } from "../../../store/searchHistoryStore";
 
-export const useTravelPlanForm = () => {
+export const useTravelPlanForm = (preferences?: string[]) => {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(() => {
     const date = new Date();
@@ -89,6 +89,7 @@ export const useTravelPlanForm = () => {
         endDate: formatDateForAPI(endDate),
         destination,
         ...(budgetNum !== undefined && { budget: budgetNum }),
+        ...(preferences && preferences.length > 0 && { preferences }),
       });
 
       if (result.success && result.data) {

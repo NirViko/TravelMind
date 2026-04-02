@@ -39,7 +39,7 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 8,
     letterSpacing: -1,
-    textShadowColor: "rgba(74, 144, 226, 0.3)",
+    textShadowColor: "rgba(107, 127, 212, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -111,8 +111,8 @@ export const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 16,
     paddingVertical: 4,
-    backgroundColor: "#4A90E2",
-    shadowColor: "#4A90E2",
+    backgroundColor: "#6B7FD4",
+    shadowColor: "#6B7FD4",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -125,7 +125,7 @@ export const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: "#4A90E2",
+    color: "#6B7FD4",
     textAlign: "center",
     marginTop: 20,
     fontWeight: "500",
@@ -143,7 +143,7 @@ export const styles = StyleSheet.create({
   },
   switchLink: {
     fontSize: 14,
-    color: "#4A90E2",
+    color: "#6B7FD4",
     fontWeight: "600",
   },
   dividerContainer: {

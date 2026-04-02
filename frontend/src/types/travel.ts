@@ -3,7 +3,8 @@ export interface TravelPlanRequest {
   startDate: string;
   endDate: string;
   destination: string;
-  budget?: number; // Optional budget
+  budget?: number;
+  preferences?: string[];
 }
 
 export interface Location {

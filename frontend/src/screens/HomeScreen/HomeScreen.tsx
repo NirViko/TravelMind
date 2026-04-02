@@ -37,6 +37,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const { logout, isAuthenticated } = useAuthStore();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabId>("add");
+  const [preferences, setPreferences] = useState<string[]>([]);
 
   // Positions of each tab's center x, measured via onLayout
   const tabCenters = useRef<Record<TabId, number>>({
@@ -82,7 +83,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     handleStartDateChange,
     handleEndDateChange,
     handleGeneratePlan,
-  } = useTravelPlanForm();
+  } = useTravelPlanForm(preferences);
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -192,6 +193,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onBudgetChange={setBudget}
             onCurrencyChange={setCurrency}
             onGeneratePlan={handleGeneratePlan}
+            onPreferencesChange={setPreferences}
             onSelectFromHistory={handleSelectFromHistory}
           />
         </Animated.ScrollView>
@@ -225,10 +227,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           ]}
           pointerEvents="none"
         >
-          <LinearGradient
-            colors={["#5B6FD4", "#7B8FE8"]}
-            style={styles.activeCircleGradient}
-          />
+          <View style={styles.activeCircleGradient} />
         </Animated.View>
 
         {TABS.map((tab) => {
@@ -244,7 +243,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Icon
                 name={tab.icon as any}
                 size={22}
-                color={isActive ? "#FFFFFF" : "#555555"}
+                color={isActive ? "#85adff" : "#555555"}
               />
               <Text
                 style={[

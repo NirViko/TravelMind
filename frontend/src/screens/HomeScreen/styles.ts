@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 100,
+    paddingTop: 40,
     paddingBottom: 40,
   },
 
@@ -396,6 +396,7 @@ export const styles = StyleSheet.create({
   activeCircleGradient: {
     flex: 1,
     borderRadius: 26,
+    backgroundColor: "rgba(133, 173, 255, 0.2)",
   },
   tabIconWrapper: {
     width: 44,
@@ -418,7 +419,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   bottomNavLabelActive: {
-    color: "#FFFFFF",
+    color: "#85adff",
   },
 
   // FAB Add button

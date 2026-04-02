@@ -30,7 +30,7 @@ router.get(
 // Generate travel plan endpoint
 router.post("/plan", async (req: Request, res: Response) => {
   try {
-    const { startDate, endDate, destination, budget }: TravelPlanRequest =
+    const { startDate, endDate, destination, budget, preferences }: TravelPlanRequest =
       req.body;
 
     // Validation
@@ -68,7 +68,13 @@ router.post("/plan", async (req: Request, res: Response) => {
       budget !== undefined && budget !== null
         ? `with a budget of $${budget} USD`
         : "without a specific budget constraint (focus on quality experiences and provide realistic price estimates)";
-    const prompt = `You are a travel planning expert. Create a detailed travel itinerary for ${destination} from ${startDate} to ${endDate} (${totalDays} days) ${budgetText}.
+
+    const preferencesText =
+      preferences && preferences.length > 0
+        ? `\nTRAVELER PREFERENCES: The traveler is especially interested in: ${preferences.join(", ")}. Prioritize activities, restaurants, and experiences that match these interests throughout the itinerary.`
+        : "";
+
+    const prompt = `You are a travel planning expert. Create a detailed travel itinerary for ${destination} from ${startDate} to ${endDate} (${totalDays} days) ${budgetText}.${preferencesText}
 
 CRITICAL REQUIREMENTS - READ CAREFULLY:
 - You MUST use ONLY REAL, EXISTING places that actually exist in ${destination}

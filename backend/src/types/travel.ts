@@ -4,6 +4,7 @@ export interface TravelPlanRequest {
   endDate: string; // ISO date string
   destination: string; // e.g., "Paris, France"
   budget?: number; // Optional budget in USD
+  preferences?: string[]; // e.g., ["culinary", "art", "shopping"]
 }
 
 export interface Location {

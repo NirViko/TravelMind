@@ -36,6 +36,7 @@ interface SearchFormProps {
   onBudgetChange: (value: string) => void;
   onCurrencyChange: (value: string) => void;
   onGeneratePlan: () => void;
+  onPreferencesChange?: (preferences: string[]) => void;
   onSelectFromHistory?: (item: {
     destination: string;
     startDate: Date;
@@ -79,6 +80,7 @@ export const SearchForm: FC<SearchFormProps> = ({
   onBudgetChange,
   onCurrencyChange: _onCurrencyChange,
   onGeneratePlan,
+  onPreferencesChange,
   onSelectFromHistory: _onSelectFromHistory,
 }) => {
   const [destinationSuggestions, setDestinationSuggestions] = useState<string[]>([]);
@@ -145,9 +147,11 @@ export const SearchForm: FC<SearchFormProps> = ({
   };
 
   const togglePreference = (id: string) => {
-    setSelectedPreferences((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
+    setSelectedPreferences((prev) => {
+      const next = prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id];
+      onPreferencesChange?.(next);
+      return next;
+    });
   };
 
   const isStartDateSet = formatDate(startDate) !== formatDate(new Date(0));

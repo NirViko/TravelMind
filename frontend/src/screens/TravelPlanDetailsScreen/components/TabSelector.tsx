@@ -43,10 +43,13 @@ export const TabSelector: React.FC<TabSelectorProps> = ({
   onToggle,
 }) => {
   const scaleAnimations = useRef(
-    tabs.reduce((acc, tab) => {
-      acc[tab.value] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
+    tabs.reduce(
+      (acc, tab) => {
+        acc[tab.value] = new Animated.Value(1);
+        return acc;
+      },
+      {} as Record<string, Animated.Value>,
+    ),
   ).current;
 
   const handleTabPress = (tabValue: string) => {
