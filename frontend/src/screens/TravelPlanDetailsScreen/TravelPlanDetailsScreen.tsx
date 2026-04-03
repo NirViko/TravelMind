@@ -1,19 +1,18 @@
 import React, { useState } from "react";
-import { View, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { TravelPlan, Destination } from "../../types/travel";
-import {
-  HeaderSection,
-  MapSection,
-  DestinationDetailCard,
-  ItineraryTab,
-  HotelsTab,
-  RestaurantsTab,
-  TransportTab,
-  TabTitle,
-} from "./components";
-import { TabSelector } from "./components/TabSelector";
+import { MapSection, DestinationDetailCard } from "./components";
+import { NocturnalHeader } from "./components/NocturnalHeader";
+import { DayScroller } from "./components/DayScroller";
+import { TimelineView } from "./components/TimelineView";
+import { BottomNav } from "./components/BottomNav";
+import { NocturnalFAB } from "./components/NocturnalFAB";
 import { useTravelPlanDetails } from "./hooks/useTravelPlanDetails";
-import { styles } from "./styles";
+import {
+  useNocturnalItinerary,
+  TimelineItem,
+} from "./hooks/useNocturnalItinerary";
 
 interface TravelPlanDetailsScreenProps {
   travelPlan: TravelPlan;
@@ -27,154 +26,93 @@ export const TravelPlanDetailsScreen: React.FC<
     mapRef,
     sortedItinerary,
     calculateMapRegion,
-    expandedDestination,
     selectedHotelIndex,
-    activeTab,
     imageErrors,
     setSelectedHotelIndex,
-    setActiveTab,
     setImageErrors,
     toggleDestination,
+    activeBottomTab,
+    setActiveBottomTab,
+    selectedDayIndex,
+    setSelectedDayIndex,
   } = useTravelPlanDetails({ travelPlan });
 
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
-  const [isTabsExpanded, setIsTabsExpanded] = useState(true);
   const [selectedDestination, setSelectedDestination] = useState<any>(null);
   const [showDetailCard, setShowDetailCard] = useState(false);
   const [selectedDestinationForRoute, setSelectedDestinationForRoute] =
     useState<Destination | null>(null);
 
+  const { dayDates, timelineItems, transitLabels } = useNocturnalItinerary({
+    travelPlan,
+    selectedDayIndex,
+  });
+
+  const currency = travelPlan.currency ?? "USD";
+
   const handleMarkerPress = (destination: any) => {
     setSelectedDestination(destination);
     setShowDetailCard(true);
-    // Set destination for route calculation
-    if (destination && destination.coordinates) {
+    if (destination?.coordinates) {
       setSelectedDestinationForRoute(destination);
     }
   };
 
-  const handleImageError = (url: string) => {
-    setImageErrors((prev) => new Set(prev).add(url));
-  };
-
-  const handleToggleDestination = (visitOrder: number) => {
-    const destination = sortedItinerary.find(
-      (d) => d.visitOrder === visitOrder
-    );
-    if (destination) {
-      toggleDestination(visitOrder, destination);
+  const handleTimelineItemPress = (item: TimelineItem) => {
+    if (item.type === "destination" && item.visitOrder != null) {
+      const dest = sortedItinerary.find(
+        (d) => d.visitOrder === item.visitOrder,
+      );
+      if (dest) {
+        setSelectedDestination(dest);
+        setShowDetailCard(true);
+      }
     }
   };
 
-  const currency = travelPlan.currency || "USD";
-
   return (
-    <View style={styles.container}>
-      <HeaderSection travelPlan={travelPlan} onBack={onBack} />
-
-      <MapSection
-        travelPlan={travelPlan}
-        sortedItinerary={sortedItinerary}
-        mapRef={mapRef}
-        initialRegion={calculateMapRegion()}
-        onMarkerPress={handleMarkerPress}
-        isExpanded={isMapExpanded}
-        selectedDestinationForRoute={selectedDestinationForRoute}
-        onToggle={() => {
-          const newMapExpanded = !isMapExpanded;
-          setIsMapExpanded(newMapExpanded);
-          if (newMapExpanded) {
-            setIsTabsExpanded(false);
-          }
-        }}
+    <SafeAreaView style={styles.root} edges={["top"]}>
+      <NocturnalHeader
+        destinationName={travelPlan.destination}
+        onBack={onBack}
       />
 
-      {isMapExpanded && !isTabsExpanded ? (
-        <View style={styles.tabsOnlyContainer}>
-          <TabSelector
-            activeTab={activeTab}
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              setIsTabsExpanded(true);
-              setIsMapExpanded(false);
-            }}
-            isExpanded={false}
-            isMapExpanded={true}
-            onToggle={() => {
-              setIsTabsExpanded(true);
-              setIsMapExpanded(false);
-            }}
+      <DayScroller
+        days={dayDates}
+        selectedIndex={selectedDayIndex}
+        onSelect={setSelectedDayIndex}
+      />
+
+      {/* Main content area */}
+      {activeBottomTab === "timeline" ? (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <TimelineView
+            items={timelineItems}
+            transitLabels={transitLabels}
+            onItemPress={handleTimelineItemPress}
           />
-        </View>
+        </ScrollView>
       ) : (
-        <View style={styles.listContainer}>
-          <TabSelector
-            activeTab={activeTab}
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              setIsTabsExpanded(true);
-              setIsMapExpanded(false);
-            }}
-            isExpanded={isTabsExpanded}
-            isMapExpanded={isMapExpanded}
-            onToggle={() => {
-              const newTabsExpanded = !isTabsExpanded;
-              setIsTabsExpanded(newTabsExpanded);
-              if (!newTabsExpanded) {
-                setIsMapExpanded(false);
-              }
-            }}
+        <View style={styles.mapContainer}>
+          <MapSection
+            travelPlan={travelPlan}
+            sortedItinerary={sortedItinerary}
+            mapRef={mapRef}
+            initialRegion={calculateMapRegion()}
+            onMarkerPress={handleMarkerPress}
+            isExpanded={true}
+            selectedDestinationForRoute={selectedDestinationForRoute}
+            onToggle={() => {}}
           />
-
-          {isTabsExpanded && !isMapExpanded && (
-            <>
-              <TabTitle activeTab={activeTab} />
-              {activeTab === "itinerary" && (
-                <ItineraryTab
-                  sortedItinerary={sortedItinerary}
-                  expandedDestination={expandedDestination}
-                  currency={currency}
-                  imageErrors={imageErrors}
-                  onToggleDestination={handleToggleDestination}
-                  onImageError={handleImageError}
-                  cityName={travelPlan.destination}
-                />
-              )}
-
-              {activeTab === "hotels" && travelPlan.hotels && (
-                <HotelsTab
-                  hotels={travelPlan.hotels}
-                  selectedHotelIndex={selectedHotelIndex}
-                  currency={currency}
-                  onSelectHotel={setSelectedHotelIndex}
-                  cityName={travelPlan.destination}
-                />
-              )}
-
-              {activeTab === "restaurants" && travelPlan.restaurants && (
-                <RestaurantsTab
-                  restaurants={travelPlan.restaurants}
-                  imageErrors={imageErrors}
-                  onImageError={handleImageError}
-                />
-              )}
-
-              {activeTab === "transport" && (
-                <TransportTab
-                  destination={travelPlan.destination}
-                  destinationCoordinates={
-                    selectedDestinationForRoute
-                      ? selectedDestinationForRoute.coordinates
-                      : sortedItinerary.length > 0
-                      ? sortedItinerary[0].coordinates
-                      : undefined
-                  }
-                />
-              )}
-            </>
-          )}
         </View>
       )}
+
+      <NocturnalFAB onPress={() => {}} />
+
+      <BottomNav activeTab={activeBottomTab} onTabChange={setActiveBottomTab} />
 
       <DestinationDetailCard
         destination={selectedDestination}
@@ -185,6 +123,22 @@ export const TravelPlanDetailsScreen: React.FC<
           setSelectedDestination(null);
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#0e0e0e",
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 120,
+  },
+  mapContainer: {
+    flex: 1,
+  },
+});

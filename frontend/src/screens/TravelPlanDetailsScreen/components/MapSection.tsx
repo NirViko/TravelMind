@@ -50,7 +50,7 @@ export const MapSection: React.FC<MapSectionProps> = ({
           latitude: destinationForRoute.coordinates.latitude,
           longitude: destinationForRoute.coordinates.longitude,
         }
-      : null
+      : null,
   );
 
   const mapHeight = isExpanded ? 900 : 250;
@@ -169,7 +169,7 @@ export const MapSection: React.FC<MapSectionProps> = ({
                     title: hotel.name,
                     visitOrder: 1999 + index, // High number to avoid conflicts
                   };
-                  onMarkerPress?.(hotelDestination as Destination);
+                  onMarkerPress?.(hotelDestination as unknown as Destination);
                 }
               }}
             >
@@ -182,7 +182,7 @@ export const MapSection: React.FC<MapSectionProps> = ({
                       title: hotel.name,
                       visitOrder: 1999 + index,
                     };
-                    onMarkerPress?.(hotelDestination as Destination);
+                    onMarkerPress?.(hotelDestination as unknown as Destination);
                   }
                 }}
               >

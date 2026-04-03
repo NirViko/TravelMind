@@ -93,7 +93,10 @@ Requirements:
    - Title (REAL, EXACT name of an ACTUAL tourist attraction/landmark that EXISTS in ${destination}. Examples: "Eiffel Tower" (Paris), "Colosseum" (Rome), "Statue of Liberty" (New York). Do NOT use made-up names)
    - Description (detailed description of what to see/do there, 2-3 sentences - describe what actually exists at this real location)
    - Coordinates (REAL and ACCURATE latitude and longitude as numbers - you MUST use the actual coordinates of the REAL place. Look up the exact coordinates from Google Maps or official sources. Do NOT approximate or invent coordinates. Latitude must be between -90 and 90, longitude between -180 and 180)
-   - Visit order (sequential number starting from 1)
+   - Visit order (sequential number starting from 1 across ALL days)
+   - Day (which day of the trip, starting from 1. Day 1 = first day, Day 2 = second day, etc.)
+   - Start time (the recommended start time for this activity in "HH:MM" 24-hour format, e.g. "09:30", "14:00". Schedule activities realistically: morning visits 09:00-12:00, afternoon 13:00-17:00, evening 18:00+. Leave gaps for travel and meals.)
+   - Category (one of: "SIGHTSEEING", "CULTURE", "NATURE", "SHOPPING", "ENTERTAINMENT", "HISTORY", "ART", "SPORT")
    - Estimated duration (e.g., "2 hours", "Half day", "Full day")
    - Image URL (will be automatically fetched from Google Places API - set to null in your response)
    - Price (entry/admission price in local currency if applicable, null if free - use realistic prices for the actual place)
@@ -123,6 +126,8 @@ Requirements:
    - Price range (e.g., "$", "$$", "$$$", "$$$$")
    - Coordinates (REAL and ACCURATE latitude and longitude - use the exact coordinates of the actual restaurant location from Google Maps)
    - Rating (1-5 stars - use realistic ratings)
+   - Day (which day of the trip to visit this restaurant, starting from 1. Distribute restaurants across different days.)
+   - Start time (recommended meal time in "HH:MM" 24-hour format, e.g. "13:00" for lunch, "19:30" for dinner)
    - Website URL (if available, or null)
    - Image URL (if available, or null)
 7. Include 3-5 travel recommendations/tips as an array
@@ -145,6 +150,9 @@ Return the response as a valid JSON object with this EXACT structure (no markdow
         "longitude": <number>
       },
       "visitOrder": <number>,
+      "day": <number>,
+      "startTime": "<HH:MM in 24h format>",
+      "category": "<SIGHTSEEING|CULTURE|NATURE|SHOPPING|ENTERTAINMENT|HISTORY|ART|SPORT>",
       "estimatedDuration": "<duration>",
       "imageUrl": "<image URL or null>",
       "price": <number or null>,
@@ -176,6 +184,8 @@ Return the response as a valid JSON object with this EXACT structure (no markdow
         "longitude": <number>
       },
       "rating": <number 1-5>,
+      "day": <number>,
+      "startTime": "<HH:MM in 24h format>",
       "website": "<website URL or null>",
       "imageUrl": "<image URL or null>"
     }
@@ -476,7 +486,7 @@ Return ONLY valid JSON, no additional text.`;
 
       // Ensure hotels is an array
       if (!travelPlan.hotels || !Array.isArray(travelPlan.hotels)) {
-        throw new Error("Hotels must be an array");
+        travelPlan.hotels = [];
       }
 
       // Set default currency if not provided

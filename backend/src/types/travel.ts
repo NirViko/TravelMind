@@ -29,6 +29,9 @@ export interface Destination {
   description: string;
   coordinates: Location;
   visitOrder: number; // Order in the itinerary
+  day: number; // Day number (1-based)
+  startTime: string; // "HH:MM" 24h format, e.g. "09:30"
+  category?: string; // e.g. "SIGHTSEEING", "CULTURE", "NATURE", "SHOPPING"
   estimatedDuration?: string; // e.g., "2 hours", "Half day"
   imageUrl?: string; // URL to destination image
   price?: number; // Entry price if applicable
@@ -42,6 +45,8 @@ export interface Restaurant {
   priceRange?: string; // e.g., "$$", "$$$"
   coordinates: Location;
   rating?: number; // 1-5
+  day?: number; // Day of the trip this restaurant is recommended for
+  startTime?: string; // "HH:MM" 24h format, e.g. "13:00"
   website?: string;
   imageUrl?: string;
 }

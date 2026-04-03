@@ -4,17 +4,29 @@ import {
   TouchableOpacity,
   Animated,
   Text,
+  ScrollView,
   LayoutChangeEvent,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { TravelPlanDetailsScreen } from "../TravelPlanDetailsScreen";
+import MapView from "react-native-maps";
 import { SearchForm, EmptyTabScreen } from "./components";
 import { useTravelPlanForm } from "../TravelPlanScreen/hooks/useTravelPlanForm";
 import { useDateFormatter } from "../../hooks/useDateFormatter";
 import { useAuthStore } from "../../store/authStore";
 import { styles } from "./styles";
+import { TravelPlan, Destination } from "../../types/travel";
+import {
+  DayScroller,
+  MapSection,
+  DestinationDetailCard,
+} from "../TravelPlanDetailsScreen/components";
+import { TimelineView } from "../TravelPlanDetailsScreen/components/TimelineView";
+import {
+  useNocturnalItinerary,
+  TimelineItem,
+} from "../TravelPlanDetailsScreen/hooks/useNocturnalItinerary";
 
 interface HomeScreenProps {
   onLogout?: () => void;
@@ -31,6 +43,47 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 
 const CIRCLE_SIZE = 52;
 
+// Inner component so hooks can be called safely with non-null travelPlan
+function TimelineTabContent({
+  travelPlan,
+  selectedDayIndex,
+  onDaySelect,
+  onItemPress,
+  bottomPad,
+}: {
+  travelPlan: TravelPlan;
+  selectedDayIndex: number;
+  onDaySelect: (i: number) => void;
+  onItemPress: (item: TimelineItem) => void;
+  bottomPad: number;
+}) {
+  const { dayDates, timelineItems, transitLabels } = useNocturnalItinerary({
+    travelPlan,
+    selectedDayIndex,
+  });
+
+  return (
+    <>
+      <DayScroller
+        days={dayDates}
+        selectedIndex={selectedDayIndex}
+        onSelect={onDaySelect}
+      />
+      <ScrollView
+        style={{ paddingBottom: 112 }}
+        contentContainerStyle={{ paddingBottom: bottomPad }}
+        showsVerticalScrollIndicator={false}
+      >
+        <TimelineView
+          items={timelineItems}
+          transitLabels={transitLabels}
+          onItemPress={onItemPress}
+        />
+      </ScrollView>
+    </>
+  );
+}
+
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onLogout: _onLogout,
 }) => {
@@ -38,8 +91,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabId>("add");
   const [preferences, setPreferences] = useState<string[]>([]);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedDestination, setSelectedDestination] = useState<any>(null);
+  const [showDetailCard, setShowDetailCard] = useState(false);
+  const [selectedDestinationForRoute, setSelectedDestinationForRoute] =
+    useState<Destination | null>(null);
 
-  // Positions of each tab's center x, measured via onLayout
+  const mapRef = useRef<MapView | null>(null);
+
   const tabCenters = useRef<Record<TabId, number>>({
     itinerary: 0,
     timeline: 0,
@@ -87,7 +146,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Animate circle to active tab
+  // Auto-switch to timeline when results arrive
+  useEffect(() => {
+    if (travelPlan) {
+      setActiveTab("timeline");
+      setSelectedDayIndex(0);
+    }
+  }, [travelPlan]);
+
+  // Animate sliding circle to active tab
   useEffect(() => {
     const x = tabCenters.current[activeTab];
     if (x === 0 && !measured) return;
@@ -102,7 +169,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleTabLayout = (tabId: TabId) => (e: LayoutChangeEvent) => {
     const { x, width } = e.nativeEvent.layout;
     tabCenters.current[tabId] = x + width / 2;
-    // Once all tabs measured, init circle position
     const allMeasured = TABS.every((t) => tabCenters.current[t.id] !== 0);
     if (allMeasured && !measured) {
       circleX.setValue(tabCenters.current["add"] - CIRCLE_SIZE / 2);
@@ -122,16 +188,54 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setEndDate(item.endDate);
   };
 
-  const { formatDateForDisplay } = useDateFormatter();
+  const handleMarkerPress = (dest: any) => {
+    setSelectedDestination(dest);
+    setShowDetailCard(true);
+    if (dest?.coordinates) setSelectedDestinationForRoute(dest);
+  };
 
-  if (travelPlan) {
-    return (
-      <TravelPlanDetailsScreen
-        travelPlan={travelPlan}
-        onBack={() => setTravelPlan(null)}
-      />
-    );
-  }
+  const handleTimelineItemPress = (item: TimelineItem) => {
+    if (item.type === "destination" && item.visitOrder != null && travelPlan) {
+      const dest = travelPlan.itinerary.find(
+        (d) => d.visitOrder === item.visitOrder,
+      );
+      if (dest) {
+        setSelectedDestination(dest);
+        setShowDetailCard(true);
+      }
+    }
+  };
+
+  const calculateMapRegion = () => {
+    if (!travelPlan || travelPlan.itinerary.length === 0) {
+      return {
+        latitude: 0,
+        longitude: 0,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
+    }
+    const lats = travelPlan.itinerary.map((d) => d.coordinates.latitude);
+    const lngs = travelPlan.itinerary.map((d) => d.coordinates.longitude);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: Math.max((maxLat - minLat) * 1.5 || 0.1, 0.01),
+      longitudeDelta: Math.max((maxLng - minLng) * 1.5 || 0.1, 0.01),
+    };
+  };
+
+  const sortedItinerary = travelPlan
+    ? [...travelPlan.itinerary].sort((a, b) => a.visitOrder - b.visitOrder)
+    : [];
+
+  const { formatDateForDisplay } = useDateFormatter();
+  const currency2 = travelPlan?.currency ?? "USD";
+  const navTitle = travelPlan ? travelPlan.destination : "New Voyage";
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -145,10 +249,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* Top navigation bar */}
       <View style={styles.topNav}>
-        <TouchableOpacity style={styles.topNavIconBtn} activeOpacity={0.7}>
-          <Icon name="arrow-left" size={22} color="#FFFFFF" />
+        <TouchableOpacity
+          style={styles.topNavIconBtn}
+          activeOpacity={0.7}
+          onPress={
+            travelPlan
+              ? () => {
+                  setTravelPlan(null);
+                  setActiveTab("add");
+                }
+              : undefined
+          }
+        >
+          <Icon
+            name={travelPlan ? "arrow-left" : "arrow-left"}
+            size={22}
+            color={travelPlan ? "#FFFFFF" : "transparent"}
+          />
         </TouchableOpacity>
-        <Text style={styles.topNavTitle}>New Voyage</Text>
+        <Text style={styles.topNavTitle}>{navTitle}</Text>
         <TouchableOpacity
           style={styles.topNavIconBtn}
           onPress={handleLogout}
@@ -158,6 +277,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* Tab content */}
       {activeTab === "add" ? (
         <Animated.ScrollView
           style={styles.scrollView}
@@ -197,18 +317,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onSelectFromHistory={handleSelectFromHistory}
           />
         </Animated.ScrollView>
-      ) : activeTab === "itinerary" ? (
-        <EmptyTabScreen
-          icon="map-outline"
-          title="No Itinerary Yet"
-          subtitle="Plan your first trip and it will appear here."
-        />
       ) : activeTab === "timeline" ? (
-        <EmptyTabScreen
-          icon="timeline-text-outline"
-          title="No Timeline Yet"
-          subtitle="Your trip timeline will show up here once you create a plan."
-        />
+        travelPlan ? (
+          <TimelineTabContent
+            travelPlan={travelPlan}
+            selectedDayIndex={selectedDayIndex}
+            onDaySelect={setSelectedDayIndex}
+            onItemPress={handleTimelineItemPress}
+            bottomPad={100 + insets.bottom}
+          />
+        ) : (
+          <EmptyTabScreen
+            icon="timeline-text-outline"
+            title="No Timeline Yet"
+            subtitle="Your trip timeline will show up here once you create a plan."
+          />
+        )
+      ) : activeTab === "itinerary" ? (
+        travelPlan ? (
+          <View style={{ flex: 1 }}>
+            <MapSection
+              travelPlan={travelPlan}
+              sortedItinerary={sortedItinerary}
+              mapRef={mapRef}
+              initialRegion={calculateMapRegion()}
+              onMarkerPress={handleMarkerPress}
+              isExpanded={true}
+              selectedDestinationForRoute={selectedDestinationForRoute}
+              onToggle={() => {}}
+            />
+          </View>
+        ) : (
+          <EmptyTabScreen
+            icon="map-outline"
+            title="No Itinerary Yet"
+            subtitle="Plan your first trip and it will appear here."
+          />
+        )
       ) : (
         <EmptyTabScreen
           icon="calendar-edit"
@@ -219,7 +364,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* Bottom navigation bar */}
       <View style={[styles.bottomNav, { paddingBottom: insets.bottom || 12 }]}>
-        {/* Sliding purple circle indicator */}
         <Animated.View
           style={[
             styles.activeCircle,
@@ -257,6 +401,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           );
         })}
       </View>
+
+      {travelPlan && (
+        <DestinationDetailCard
+          destination={selectedDestination}
+          currency={currency2}
+          visible={showDetailCard}
+          onClose={() => {
+            setShowDetailCard(false);
+            setSelectedDestination(null);
+          }}
+        />
+      )}
     </View>
   );
 };
