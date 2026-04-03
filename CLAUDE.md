@@ -173,6 +173,11 @@ Code quality, structure, and scalability are more important than quick hacks.
 - Travel logic → backend/src/routes/travel.ts + services
 - API issues → frontend/src/api/client.ts
 
+# Standards
+
+Before implementing any feature or making significant changes, check the relevant skill:
+`/components`, `/hooks`, `/typescript`, `/testing`, `/comments`, `/defensive-ui`, `/accessibility`, `/folder-structure`, `/style`, `/performence`
+
 # Do NOT
 
 - Do not rewrite large parts of the codebase without reason
