@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { styles } from "./styles";
-import { AuthService } from "../../services/authService";
-import { useAuthStore } from "../../store/authStore";
+import { useEmailVerification } from "./useEmailVerification";
 
 interface EmailVerificationScreenProps {
   email: string;
@@ -18,54 +16,24 @@ interface EmailVerificationScreenProps {
   onResend?: () => void;
 }
 
-export const EmailVerificationScreen: React.FC<
-  EmailVerificationScreenProps
-> = ({ email, onVerified, onGoToLogin, onResend }) => {
-  const [isResending, setIsResending] = useState(false);
-  const { user, setUser } = useAuthStore();
-
-  const handleGoToLogin = () => {
-    if (onGoToLogin) {
-      onGoToLogin();
-    } else {
-      onVerified(); // Fallback to onVerified if onGoToLogin not provided
-    }
-  };
-
-  const handleResendEmail = async () => {
-    setIsResending(true);
-    try {
-      // Pass email to resend verification (works even without token)
-      const result = await AuthService.resendVerificationEmail(email);
-      if (result.success) {
-        Alert.alert(
-          "Email Sent",
-          "A new verification email has been sent to your inbox. Please check your email."
-        );
-        if (onResend) {
-          onResend();
-        }
-      } else {
-        Alert.alert(
-          "Error",
-          result.error || "Failed to resend verification email"
-        );
-      }
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.message || "Failed to resend verification email"
-      );
-    } finally {
-      setIsResending(false);
-    }
-  };
+export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
+  email,
+  onVerified,
+  onGoToLogin,
+  onResend,
+}) => {
+  const { isResending, handleGoToLogin, handleResendEmail } = useEmailVerification({
+    email,
+    onVerified,
+    onGoToLogin,
+    onResend,
+  });
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Icon name="check-circle" size={80} color="#4A90E2" />
+          <Icon name="check-circle" size={80} color="#6B7FD4" />
         </View>
 
         <Text style={styles.title}>Account Created Successfully!</Text>
@@ -81,6 +49,9 @@ export const EmailVerificationScreen: React.FC<
             style={[styles.button, styles.primaryButton]}
             onPress={handleGoToLogin}
             disabled={isResending}
+            accessibilityRole="button"
+            accessibilityLabel="Go to Sign In"
+            accessibilityState={{ disabled: isResending }}
           >
             <Icon name="login" size={20} color="#FFFFFF" />
             <Text style={styles.buttonText}>Go to Sign In</Text>
@@ -91,9 +62,12 @@ export const EmailVerificationScreen: React.FC<
           onPress={handleResendEmail}
           disabled={isResending}
           style={styles.resendLink}
+          accessibilityRole="button"
+          accessibilityLabel="Resend verification email"
+          accessibilityState={{ disabled: isResending }}
         >
           {isResending ? (
-            <ActivityIndicator size="small" color="#4A90E2" />
+            <ActivityIndicator size="small" color="#6B7FD4" />
           ) : (
             <Text style={styles.resendLinkText}>Resend Verification Email</Text>
           )}
