@@ -23,6 +23,7 @@ import {
   DestinationDetailCard,
 } from "../TravelPlanDetailsScreen/components";
 import { TimelineView } from "../TravelPlanDetailsScreen/components/TimelineView";
+import { EditPlanView } from "../TravelPlanDetailsScreen/components/EditPlanView";
 import {
   useNocturnalItinerary,
   TimelineItem,
@@ -44,6 +45,23 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 const CIRCLE_SIZE = 52;
 
 // Inner component so hooks can be called safely with non-null travelPlan
+function EditTabContent({
+  travelPlan,
+  selectedDayIndex,
+  onSave,
+}: {
+  travelPlan: TravelPlan;
+  selectedDayIndex: number;
+  onSave: (reordered: TimelineItem[]) => void;
+}) {
+  const { timelineItems } = useNocturnalItinerary({
+    travelPlan,
+    selectedDayIndex,
+  });
+
+  return <EditPlanView items={timelineItems} onSave={onSave} />;
+}
+
 function TimelineTabContent({
   travelPlan,
   selectedDayIndex,
@@ -71,7 +89,7 @@ function TimelineTabContent({
       />
       <ScrollView
         style={{ paddingBottom: 112 }}
-        contentContainerStyle={{ paddingBottom: bottomPad }}
+        contentContainerStyle={{ height: "100%" }}
         showsVerticalScrollIndicator={false}
       >
         <TimelineView
@@ -192,6 +210,41 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setSelectedDestination(dest);
     setShowDetailCard(true);
     if (dest?.coordinates) setSelectedDestinationForRoute(dest);
+  };
+
+  const handleEditSave = (reordered: TimelineItem[]) => {
+    if (!travelPlan) return;
+
+    // Collect the original sorted times for this day
+    const originalTimes = reordered
+      .map((item) => item.sortTime)
+      .slice()
+      .sort((a, b) => a.localeCompare(b));
+
+    // Build updated itinerary: reassign startTime based on new position order
+    const updatedItinerary = travelPlan.itinerary.map((dest) => {
+      const reorderedIndex = reordered.findIndex(
+        (item) => item.id === `dest-${dest.visitOrder}`,
+      );
+      if (reorderedIndex === -1) return dest;
+      return { ...dest, startTime: originalTimes[reorderedIndex] };
+    });
+
+    // Build updated restaurants: reassign startTime based on new position order
+    const updatedRestaurants = (travelPlan.restaurants ?? []).map((rest, i) => {
+      const dayNumber = selectedDayIndex + 1;
+      const reorderedIndex = reordered.findIndex(
+        (item) => item.id === `rest-${dayNumber}-${i}`,
+      );
+      if (reorderedIndex === -1) return rest;
+      return { ...rest, startTime: originalTimes[reorderedIndex] };
+    });
+
+    setTravelPlan({
+      ...travelPlan,
+      itinerary: updatedItinerary,
+      restaurants: updatedRestaurants,
+    });
   };
 
   const handleTimelineItemPress = (item: TimelineItem) => {
@@ -354,13 +407,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             subtitle="Plan your first trip and it will appear here."
           />
         )
-      ) : (
-        <EmptyTabScreen
-          icon="calendar-edit"
-          title="Nothing to Edit"
-          subtitle="Once you have a trip plan, you can edit it here."
-        />
-      )}
+      ) : activeTab === "edit" ? (
+        travelPlan ? (
+          <EditTabContent
+            travelPlan={travelPlan}
+            selectedDayIndex={selectedDayIndex}
+            onSave={handleEditSave}
+          />
+        ) : (
+          <EmptyTabScreen
+            icon="calendar-edit"
+            title="Nothing to Edit"
+            subtitle="Once you have a trip plan, you can edit it here."
+          />
+        )
+      ) : null}
 
       {/* Bottom navigation bar */}
       <View style={[styles.bottomNav, { paddingBottom: insets.bottom || 12 }]}>

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { styles } from "./BottomNav.styles";
 
-type BottomTab = "timeline" | "explore";
+type BottomTab = "timeline" | "explore" | "edit";
 
 interface BottomNavProps {
   activeTab: BottomTab;
@@ -30,7 +30,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             key={tab.id}
             style={styles.tab}
             onPress={() => {
-              if (tab.id === "timeline" || tab.id === "explore") {
+              if (tab.id === "timeline" || tab.id === "explore" || tab.id === "edit") {
                 onTabChange(tab.id);
               }
             }}

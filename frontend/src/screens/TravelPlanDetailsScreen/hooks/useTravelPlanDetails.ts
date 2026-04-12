@@ -13,7 +13,7 @@ export const useTravelPlanDetails = ({ travelPlan }: UseTravelPlanDetailsProps) 
   );
   const [activeTab, setActiveTab] = useState<string>("itinerary");
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [activeBottomTab, setActiveBottomTab] = useState<"timeline" | "explore">("timeline");
+  const [activeBottomTab, setActiveBottomTab] = useState<"timeline" | "explore" | "edit">("timeline");
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const mapRef = useRef<MapView>(null);
 

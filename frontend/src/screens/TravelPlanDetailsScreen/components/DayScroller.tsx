@@ -1,10 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import {
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { ScrollView, View, Text, TouchableOpacity } from "react-native";
 import { formatDayPill } from "../../../utils/itineraryTime";
 import { styles } from "./DayScroller.styles";
 
@@ -14,10 +9,13 @@ interface DayScrollerProps {
   onSelect: (index: number) => void;
 }
 
-export function DayScroller({ days, selectedIndex, onSelect }: DayScrollerProps) {
+export function DayScroller({
+  days,
+  selectedIndex,
+  onSelect,
+}: DayScrollerProps) {
   const scrollRef = useRef<ScrollView>(null);
 
-  // Auto-scroll to keep the selected pill visible
   useEffect(() => {
     scrollRef.current?.scrollTo({ x: selectedIndex * 66, animated: true });
   }, [selectedIndex]);
@@ -43,13 +41,10 @@ export function DayScroller({ days, selectedIndex, onSelect }: DayScrollerProps)
             <Text style={[styles.month, active && styles.monthActive]}>
               {month}
             </Text>
-            <Text style={[styles.day, active && styles.dayActive]}>
-              {day}
-            </Text>
+            <Text style={[styles.day, active && styles.dayActive]}>{day}</Text>
           </TouchableOpacity>
         );
       })}
     </ScrollView>
   );
 }
-

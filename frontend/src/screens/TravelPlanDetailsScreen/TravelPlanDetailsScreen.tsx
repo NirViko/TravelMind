@@ -7,6 +7,7 @@ import { NocturnalHeader } from "./components/NocturnalHeader";
 import { DayScroller } from "./components/DayScroller";
 import { TimelineView } from "./components/TimelineView";
 import { BottomNav } from "./components/BottomNav";
+import { EditPlanView } from "./components/EditPlanView";
 import { NocturnalFAB } from "./components/NocturnalFAB";
 import { useTravelPlanDetails } from "./hooks/useTravelPlanDetails";
 import {
@@ -71,19 +72,23 @@ export const TravelPlanDetailsScreen: React.FC<
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
-      <NocturnalHeader
-        destinationName={travelPlan.destination}
-        onBack={onBack}
-      />
+      {activeBottomTab !== "edit" && (
+        <NocturnalHeader
+          destinationName={travelPlan.destination}
+          onBack={onBack}
+        />
+      )}
 
-      <DayScroller
-        days={dayDates}
-        selectedIndex={selectedDayIndex}
-        onSelect={setSelectedDayIndex}
-      />
+      {activeBottomTab !== "edit" && (
+        <DayScroller
+          days={dayDates}
+          selectedIndex={selectedDayIndex}
+          onSelect={setSelectedDayIndex}
+        />
+      )}
 
       {/* Main content area */}
-      {activeBottomTab === "timeline" ? (
+      {activeBottomTab === "timeline" && (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -95,7 +100,9 @@ export const TravelPlanDetailsScreen: React.FC<
             onItemPress={handleTimelineItemPress}
           />
         </ScrollView>
-      ) : (
+      )}
+
+      {activeBottomTab === "explore" && (
         <View style={styles.mapContainer}>
           <MapSection
             travelPlan={travelPlan}
@@ -110,7 +117,14 @@ export const TravelPlanDetailsScreen: React.FC<
         </View>
       )}
 
-      <NocturnalFAB onPress={() => {}} />
+      {activeBottomTab === "edit" && (
+        <EditPlanView
+          items={timelineItems}
+          onSave={() => {}}
+        />
+      )}
+
+      {activeBottomTab !== "edit" && <NocturnalFAB onPress={() => {}} />}
 
       <BottomNav activeTab={activeBottomTab} onTabChange={setActiveBottomTab} />
 
